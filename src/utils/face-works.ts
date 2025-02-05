@@ -13,9 +13,9 @@ export const func_faceWorks = () => {
         // Рассчитываем процент прокрутки для текущего триггера
         const triggerHeight = rect.height;
         const scrolledPast = -rect.top;
-        const scrollPercentage = Math.round((scrolledPast / triggerHeight) * 100);
+        const scrollPercentage = Math.min(Math.max((scrolledPast / triggerHeight) * 100, 0), 100);
 
-        // Выводим информацию в консоль только если мы находимся в пределах триггера
+        // Если мы находимся в пределах триггера
         if (rect.top <= 0 && rect.bottom >= 0) {
           console.log(`Триггер ${triggerIndex + 1}: ${scrollPercentage}%`);
 
@@ -25,6 +25,15 @@ export const func_faceWorks = () => {
             if (indexValue === String(triggerIndex + 1)) {
               // Показываем элементы текущей секции
               div.classList.remove('hide');
+
+              // Находим все видео в текущем div
+              const videos = div.querySelectorAll('video');
+              videos.forEach((video) => {
+                if (video.duration) {
+                  // Устанавливаем время воспроизведения в зависимости от прокрутки
+                  video.currentTime = (scrollPercentage / 100) * video.duration;
+                }
+              });
             } else {
               // Скрываем все остальные элементы
               div.classList.add('hide');
@@ -36,7 +45,21 @@ export const func_faceWorks = () => {
 
     // Добавляем слушатель события скролла
     window.addEventListener('scroll', handleScroll);
-    // Вызываем функцию при инициализации для проверки начального состояния
+
+    // Инициализируем видео
+    tunnelDivs.forEach((div) => {
+      const videos = div.querySelectorAll('video');
+      videos.forEach((video) => {
+        // Устанавливаем начальное время воспроизведения
+        video.currentTime = 0;
+        // Отключаем автовоспроизведение
+        video.autoplay = false;
+        // Отключаем зацикливание
+        video.loop = false;
+      });
+    });
+
+    // Вызываем функцию при инициализации
     handleScroll();
   }
 };
