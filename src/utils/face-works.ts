@@ -1,65 +1,80 @@
 export const func_faceWorks = () => {
   // Получаем все секции-триггеры
   const triggers = document.querySelectorAll('.work-face-section-trigger');
-  // Получаем все элементы с атрибутом tunnel-index-div
-  const tunnelDivs = document.querySelectorAll('[tunnel-index-div]');
+  // Получаем все элементы с атрибутом face-work-canvas
+  const canvases = document.querySelectorAll('[face-work-canvas]');
 
-  if (triggers.length) {
-    const handleScroll = () => {
-      // Перебираем все триггеры
-      triggers.forEach((trigger, triggerIndex) => {
-        const rect = trigger.getBoundingClientRect();
-
-        // Рассчитываем процент прокрутки для текущего триггера
-        const triggerHeight = rect.height;
-        const scrolledPast = -rect.top;
-        const scrollPercentage = Math.min(Math.max((scrolledPast / triggerHeight) * 100, 0), 100);
-
-        // Если мы находимся в пределах триггера
-        if (rect.top <= 0 && rect.bottom >= 0) {
-          console.log(`Триггер ${triggerIndex + 1}: ${scrollPercentage}%`);
-
-          tunnelDivs.forEach((div) => {
-            const indexValue = div.getAttribute('tunnel-index-div');
-
-            if (indexValue === String(triggerIndex + 1)) {
-              // Показываем элементы текущей секции
-              div.classList.remove('hide');
-
-              // Находим все видео в текущем div
-              const videos = div.querySelectorAll('video');
-              videos.forEach((video) => {
-                if (video.duration) {
-                  // Устанавливаем время воспроизведения в зависимости от прокрутки
-                  video.currentTime = (scrollPercentage / 100) * video.duration;
-                }
-              });
-            } else {
-              // Скрываем все остальные элементы
-              div.classList.add('hide');
-            }
-          });
-        }
-      });
+  if (triggers.length && canvases.length) {
+    // Создаем объект для хранения параметров анимации
+    const animation = {
+      frame: 0,
+      maxFrame: 147,
     };
 
-    // Добавляем слушатель события скролла
-    window.addEventListener('scroll', handleScroll);
+    // Функция для получения URL изображения
+    const currentFrame = (index) =>
+      `https://www.apple.com/105/media/us/airpods-pro/2019/1299e2f5_9206_4470_b28e_08307a42f19b/anim/sequence/large/01-hero-lightpass/${(index + 1).toString().padStart(4, '0')}.jpg`;
 
-    // Инициализируем видео
-    tunnelDivs.forEach((div) => {
-      const videos = div.querySelectorAll('video');
-      videos.forEach((video) => {
-        // Устанавливаем начальное время воспроизведения
-        video.currentTime = 0;
-        // Отключаем автовоспроизведение
-        video.autoplay = false;
-        // Отключаем зацикливание
-        video.loop = false;
-      });
+    // Функция для загрузки изображений
+    const preloadImages = async () => {
+      const images = [];
+      const frameCount = animation.maxFrame;
+
+      for (let i = 0; i < frameCount; i++) {
+        const img = new Image();
+        img.src = currentFrame(i);
+        images.push(img);
+      }
+
+      return images;
+    };
+
+    // Инициализация канвасов
+    canvases.forEach((canvasContainer) => {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      canvas.width = 1158; // Используем те же размеры, что и в примере Apple
+      canvas.height = 770;
+
+      canvasContainer.appendChild(canvas);
     });
 
-    // Вызываем функцию при инициализации
-    handleScroll();
+    // Настройка ScrollTrigger для каждого триггера
+    triggers.forEach((trigger, index) => {
+      const currentCanvas = document.querySelector(`[face-work-canvas="${index + 1}"]`);
+      const canvas = currentCanvas.querySelector('canvas');
+      const context = canvas.getContext('2d');
+
+      // Загружаем изображения для текущей последовательности
+      let sequenceImages = [];
+      preloadImages().then((images) => {
+        sequenceImages = images;
+        // Отрисовываем первый кадр
+        if (images[0]) {
+          context.drawImage(images[0], 0, 0);
+        }
+      });
+
+      // Создаем анимацию для текущей секции
+      gsap.to(animation, {
+        frame: animation.maxFrame - 1,
+        snap: 'frame',
+        ease: 'none',
+        scrollTrigger: {
+          trigger: trigger,
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 0.5,
+          onUpdate: (self) => {
+            if (sequenceImages.length > 0) {
+              const frameIndex = Math.floor(self.progress * (animation.maxFrame - 1));
+              context.clearRect(0, 0, canvas.width, canvas.height);
+              context.drawImage(sequenceImages[frameIndex], 0, 0);
+            }
+          },
+        },
+      });
+    });
   }
 };
