@@ -20,9 +20,16 @@ export const func_faceWorks = () => {
       const images = [];
       const frameCount = animation.maxFrame;
 
+      const loadImage = (index) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.src = currentFrame(index);
+        });
+      };
+
       for (let i = 0; i < frameCount; i++) {
-        const img = new Image();
-        img.src = currentFrame(i);
+        const img = await loadImage(i);
         images.push(img);
       }
 
@@ -34,10 +41,63 @@ export const func_faceWorks = () => {
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
 
-      canvas.width = 1158; // Используем те же размеры, что и в примере Apple
-      canvas.height = 770;
+      // Устанавливаем стили для canvas
+      canvas.style.position = 'absolute';
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
 
+      // Убедимся, что родительский контейнер имеет position: relative
+      if (window.getComputedStyle(canvasContainer).position === 'static') {
+        canvasContainer.style.position = 'relative';
+      }
+
+      const updateCanvasSize = () => {
+        const rect = canvasContainer.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+
+        // Сбрасываем трансформацию
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.scale(dpr, dpr);
+      };
+
+      const drawFrame = (img) => {
+        if (!img) return;
+
+        const canvasRatio = canvas.width / canvas.height;
+        const imageRatio = img.width / img.height;
+
+        let drawWidth, drawHeight, x, y;
+
+        if (canvasRatio > imageRatio) {
+          // Канвас шире изображения - подгоняем по ширине
+          drawWidth = canvas.width;
+          drawHeight = canvas.width / imageRatio;
+          x = 0;
+          y = (canvas.height - drawHeight) / 2;
+        } else {
+          // Канвас выше изображения - подгоняем по высоте
+          drawHeight = canvas.height;
+          drawWidth = canvas.height * imageRatio;
+          x = (canvas.width - drawWidth) / 2;
+          y = 0;
+        }
+
+        context.drawImage(img, x, y, drawWidth, drawHeight);
+      };
+
+      const resizeObserver = new ResizeObserver(updateCanvasSize);
+      resizeObserver.observe(canvasContainer);
+
+      updateCanvasSize();
       canvasContainer.appendChild(canvas);
+
+      // Сохраняем функцию drawFrame в контексте canvas для использования позже
+      canvas.drawFrame = drawFrame;
     });
 
     // Настройка ScrollTrigger для каждого триггера
@@ -50,30 +110,26 @@ export const func_faceWorks = () => {
       let sequenceImages = [];
       preloadImages().then((images) => {
         sequenceImages = images;
-        // Отрисовываем первый кадр
-        if (images[0]) {
-          context.drawImage(images[0], 0, 0);
-        }
-      });
 
-      // Создаем анимацию для текущей секции
-      gsap.to(animation, {
-        frame: animation.maxFrame - 1,
-        snap: 'frame',
-        ease: 'none',
-        scrollTrigger: {
-          trigger: trigger,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: 0.5,
-          onUpdate: (self) => {
-            if (sequenceImages.length > 0) {
-              const frameIndex = Math.floor(self.progress * (animation.maxFrame - 1));
+        // Создаем ScrollTrigger
+        gsap.to(animation, {
+          frame: animation.maxFrame - 1,
+          snap: 'frame',
+          ease: 'none',
+          scrollTrigger: {
+            trigger: trigger,
+            start: 'top center',
+            end: 'bottom center',
+            scrub: 0.5,
+          },
+          onUpdate: () => {
+            const frameIndex = Math.floor(animation.frame);
+            if (sequenceImages[frameIndex]) {
               context.clearRect(0, 0, canvas.width, canvas.height);
-              context.drawImage(sequenceImages[frameIndex], 0, 0);
+              canvas.drawFrame(sequenceImages[frameIndex]);
             }
           },
-        },
+        });
       });
     });
   }
