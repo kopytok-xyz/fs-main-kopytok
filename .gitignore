@@ -26,3 +26,7 @@ typings/
 
 # Production files
 dist
+
+# Ignore source videos (but keep the folder structure)
+video-and-frames/src-videos/
+!video-and-frames/src-videos/.gitkeep

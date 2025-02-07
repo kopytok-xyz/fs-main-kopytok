@@ -127,6 +127,12 @@ export const func_faceWorks = () => {
         const trigger = triggers[index];
         const animation = { frame: 0 };
 
+        // Сразу отрисовываем первый кадр
+        if (sequenceImages[0]) {
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          drawFrame(sequenceImages[0]);
+        }
+
         gsap.to(animation, {
           frame: finalFrame,
           snap: 'frame',
