@@ -27,49 +27,114 @@ export const func_faceWorks = () => {
 
     // Функция для загрузки изображений
     const preloadImages = async (baseUrl, maxFrame) => {
-      const images = [];
-      const loadImage = (index) => {
+      const images = new Array(maxFrame + 1).fill(null);
+      let isLoading = false;
+
+      // Функция проверки видимости туннеля
+      const isTunnelVisible = () => {
+        const tunnel = document.querySelector('.tunnel');
+        if (!tunnel) return false;
+        const rect = tunnel.getBoundingClientRect();
+        return rect.top < window.innerHeight && rect.bottom > 0;
+      };
+
+      // Функция загрузки одного кадра
+      const loadImage = async (index) => {
+        if (images[index] !== null) return true;
+
+        const img = new Image();
         return new Promise((resolve) => {
-          const img = new Image();
-
-          img.onload = () => resolve({ success: true, img });
-          img.onerror = () => {
-            // Если webp не загрузился, пробуем другие форматы
-            const tryNextFormat = async (formatIndex = 1) => {
-              if (formatIndex >= formats.length) {
-                resolve({ success: false });
-                return;
-              }
-
-              const nextImg = new Image();
-              nextImg.onload = () => resolve({ success: true, img: nextImg });
-              nextImg.onerror = () => tryNextFormat(formatIndex + 1);
-              nextImg.src = `${baseUrl}${(index + 1).toString().padStart(4, '0')}.${formats[formatIndex]}`;
-            };
-
-            tryNextFormat();
+          img.onload = () => {
+            images[index] = img;
+            resolve(true);
           };
-
+          img.onerror = () => resolve(false);
           img.src = currentFrame(baseUrl, index);
         });
       };
 
-      for (let i = 0; i <= maxFrame; i++) {
-        const result = await loadImage(i);
-        if (!result.success) {
-          console.warn(`Не удалось загрузить кадр ${i}. Прекращаем загрузку.`);
-          break;
+      // Загрузка кадров с определенным шагом
+      const loadBatch = async (step) => {
+        const indices = [];
+        for (let i = 0; i <= maxFrame; i += step) {
+          indices.push(i);
         }
-        images.push(result.img);
-      }
 
-      if (images.length === 0) {
-        console.error('Не удалось загрузить ни одного кадра');
-        return images;
-      }
+        // Добавляем последний кадр
+        if (!indices.includes(maxFrame)) indices.push(maxFrame);
 
-      console.log(`Успешно загружено ${images.length} кадров из ${maxFrame + 1}`);
-      return images;
+        // Загружаем пачку кадров
+        for (const index of indices) {
+          if (!isTunnelVisible()) return;
+          await loadImage(index);
+          // Небольшая пауза между загрузками
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+      };
+
+      // Основная функция загрузки
+      const startLoading = async () => {
+        if (isLoading) return;
+        isLoading = true;
+
+        try {
+          // Первый проход - каждые 5%
+          const step1 = Math.max(1, Math.floor(maxFrame * 0.05));
+          await loadBatch(step1);
+
+          if (isTunnelVisible()) {
+            // Второй проход - каждые 2.5%
+            const step2 = Math.max(1, Math.floor(maxFrame * 0.025));
+            await loadBatch(step2);
+
+            // Загружаем оставшиеся кадры
+            if (isTunnelVisible()) {
+              for (let i = 0; i <= maxFrame; i++) {
+                if (!isTunnelVisible() || images[i] !== null) continue;
+                await loadImage(i);
+                await new Promise((resolve) => setTimeout(resolve, 10));
+              }
+            }
+          }
+        } finally {
+          isLoading = false;
+        }
+      };
+
+      // Наблюдатель за видимостью туннеля
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            startLoading();
+          }
+        },
+        { threshold: 0 }
+      );
+
+      const tunnel = document.querySelector('.tunnel');
+      if (tunnel) observer.observe(tunnel);
+
+      // Запускаем первичную загрузку
+      startLoading();
+
+      // Возвращаем прокси для доступа к изображениям
+      return new Proxy(images, {
+        get(target, prop) {
+          if (prop === 'length') return target.length;
+          const index = parseInt(prop);
+          if (isNaN(index)) return target[prop];
+
+          // Возвращаем ближайший доступный кадр
+          if (target[index]) return target[index];
+
+          // Поиск ближайшего доступного кадра
+          for (let i = 1; i <= maxFrame; i++) {
+            if (target[index - i]) return target[index - i];
+            if (target[index + i]) return target[index + i];
+          }
+          return target[0];
+        },
+      });
     };
 
     // Управление видимостью элементов
