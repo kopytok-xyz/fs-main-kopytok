@@ -18,7 +18,11 @@ export const func_faceWorks = () => {
 
     // Функция для получения URL изображения
     const currentFrame = (baseUrl, index) => {
-      return `${baseUrl}${(index + 1).toString().padStart(4, '0')}.jpg`;
+      const formats = ['webp', 'jpg', 'jpeg', 'png']; // Приоритет форматов
+      const paddedIndex = (index + 1).toString().padStart(4, '0');
+
+      // Пробуем сначала webp
+      return `${baseUrl}${paddedIndex}.${formats[0]}`;
     };
 
     // Функция для загрузки изображений
@@ -29,7 +33,22 @@ export const func_faceWorks = () => {
           const img = new Image();
 
           img.onload = () => resolve({ success: true, img });
-          img.onerror = () => resolve({ success: false });
+          img.onerror = () => {
+            // Если webp не загрузился, пробуем другие форматы
+            const tryNextFormat = async (formatIndex = 1) => {
+              if (formatIndex >= formats.length) {
+                resolve({ success: false });
+                return;
+              }
+
+              const nextImg = new Image();
+              nextImg.onload = () => resolve({ success: true, img: nextImg });
+              nextImg.onerror = () => tryNextFormat(formatIndex + 1);
+              nextImg.src = `${baseUrl}${(index + 1).toString().padStart(4, '0')}.${formats[formatIndex]}`;
+            };
+
+            tryNextFormat();
+          };
 
           img.src = currentFrame(baseUrl, index);
         });
