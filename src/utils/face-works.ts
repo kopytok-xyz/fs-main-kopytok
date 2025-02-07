@@ -206,16 +206,18 @@ export const func_faceWorks = () => {
       updateCanvasSize();
       canvasContainer.appendChild(canvas);
 
-      // Загрузка изображений и настройка ScrollTrigger
+      // Немедленно загружаем и отображаем первый кадр
+      const firstFrame = new Image();
+      firstFrame.onload = () => {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        drawFrame(firstFrame);
+      };
+      firstFrame.src = currentFrame(baseUrl, 0);
+
+      // Продолжаем загрузку остальных кадров
       preloadImages(baseUrl, finalFrame).then((sequenceImages) => {
         const trigger = triggers[index];
         const animation = { frame: 0 };
-
-        // Сразу отрисовываем первый кадр
-        if (sequenceImages[0]) {
-          context.clearRect(0, 0, canvas.width, canvas.height);
-          drawFrame(sequenceImages[0]);
-        }
 
         gsap.to(animation, {
           frame: finalFrame,
