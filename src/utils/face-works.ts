@@ -5,43 +5,69 @@ export const func_faceWorks = () => {
   const canvases = document.querySelectorAll('[face-work-canvas]');
 
   if (triggers.length && canvases.length) {
-    // Создаем объект для хранения параметров анимации
-    const animation = {
-      frame: 0,
-      maxFrame: 147,
+    // Функция для получения параметров последовательности из атрибутов
+    const getSequenceParams = (canvas) => {
+      const framesLink = canvas.getAttribute('frames-link');
+      const finalFrame = parseInt(canvas.getAttribute('final-frame'));
+
+      // Извлекаем базовый URL, заменяя звездочку на плейсхолдер для номера кадра
+      const baseUrl = framesLink.replace('*', '');
+
+      return { baseUrl, finalFrame };
     };
 
     // Функция для получения URL изображения
-    const currentFrame = (index) =>
-      `https://www.apple.com/105/media/us/airpods-pro/2019/1299e2f5_9206_4470_b28e_08307a42f19b/anim/sequence/large/01-hero-lightpass/${(index + 1).toString().padStart(4, '0')}.jpg`;
+    const currentFrame = (baseUrl, index) => {
+      return `${baseUrl}${(index + 1).toString().padStart(4, '0')}.jpg`;
+    };
 
     // Функция для загрузки изображений
-    const preloadImages = async () => {
+    const preloadImages = async (baseUrl, maxFrame) => {
       const images = [];
-      const frameCount = animation.maxFrame;
-
       const loadImage = (index) => {
         return new Promise((resolve) => {
           const img = new Image();
-          img.onload = () => resolve(img);
-          img.src = currentFrame(index);
+
+          img.onload = () => resolve({ success: true, img });
+          img.onerror = () => resolve({ success: false });
+
+          img.src = currentFrame(baseUrl, index);
         });
       };
 
-      for (let i = 0; i < frameCount; i++) {
-        const img = await loadImage(i);
-        images.push(img);
+      for (let i = 0; i <= maxFrame; i++) {
+        const result = await loadImage(i);
+        if (!result.success) {
+          console.warn(`Не удалось загрузить кадр ${i}. Прекращаем загрузку.`);
+          break;
+        }
+        images.push(result.img);
       }
 
+      if (images.length === 0) {
+        console.error('Не удалось загрузить ни одного кадра');
+        return images;
+      }
+
+      console.log(`Успешно загружено ${images.length} кадров из ${maxFrame + 1}`);
       return images;
     };
 
-    // Инициализация канвасов
-    canvases.forEach((canvasContainer) => {
+    // Управление видимостью элементов
+    const updateVisibility = (index) => {
+      document.querySelectorAll('[tunnel-index-div]').forEach((el) => {
+        const elIndex = el.getAttribute('tunnel-index-div');
+        el.classList.toggle('hide', elIndex !== index.toString());
+      });
+    };
+
+    // Инициализация для каждого canvas
+    canvases.forEach((canvasContainer, index) => {
+      const { baseUrl, finalFrame } = getSequenceParams(canvasContainer);
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
 
-      // Устанавливаем стили для canvas
+      // Настройка canvas
       canvas.style.position = 'absolute';
       canvas.style.top = '0';
       canvas.style.left = '0';
@@ -96,41 +122,37 @@ export const func_faceWorks = () => {
       updateCanvasSize();
       canvasContainer.appendChild(canvas);
 
-      // Сохраняем функцию drawFrame в контексте canvas для использования позже
-      canvas.drawFrame = drawFrame;
-    });
+      // Загрузка изображений и настройка ScrollTrigger
+      preloadImages(baseUrl, finalFrame).then((sequenceImages) => {
+        const trigger = triggers[index];
+        const animation = { frame: 0 };
 
-    // Настройка ScrollTrigger для каждого триггера
-    triggers.forEach((trigger, index) => {
-      const currentCanvas = document.querySelector(`[face-work-canvas="${index + 1}"]`);
-      const canvas = currentCanvas.querySelector('canvas');
-      const context = canvas.getContext('2d');
-
-      // Загружаем изображения для текущей последовательности
-      let sequenceImages = [];
-      preloadImages().then((images) => {
-        sequenceImages = images;
-
-        // Создаем ScrollTrigger
         gsap.to(animation, {
-          frame: animation.maxFrame - 1,
+          frame: finalFrame,
           snap: 'frame',
           ease: 'none',
           scrollTrigger: {
             trigger: trigger,
-            start: 'top center',
-            end: 'bottom center',
+            start: 'top top',
+            end: 'bottom top',
             scrub: 0.5,
-          },
-          onUpdate: () => {
-            const frameIndex = Math.floor(animation.frame);
-            if (sequenceImages[frameIndex]) {
-              context.clearRect(0, 0, canvas.width, canvas.height);
-              canvas.drawFrame(sequenceImages[frameIndex]);
-            }
+            onUpdate: (self) => {
+              const frameIndex = Math.floor(animation.frame);
+              if (sequenceImages[frameIndex]) {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                drawFrame(sequenceImages[frameIndex]);
+              }
+              // Обновляем видимость элементов
+              if (self.isActive) {
+                updateVisibility(index + 1);
+              }
+            },
           },
         });
       });
     });
+
+    // Устанавливаем начальное состояние видимости
+    updateVisibility(1);
   }
 };
