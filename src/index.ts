@@ -5,6 +5,7 @@ import { func_collapseButtons } from '$utils/collapse-buttons';
 import { func_faceWorks } from '$utils/face-works';
 import { func_fav } from '$utils/fav';
 import { func_cardFly } from '$utils/func_card-fly';
+import { func_portfolioWorks } from '$utils/func-portfolio-works';
 import { func_global } from '$utils/global';
 import { func_heightTransition } from '$utils/height-transition';
 import { func_heroForm } from '$utils/hero-form';
@@ -21,6 +22,7 @@ window.Webflow ||= [];
 window.Webflow.push(() => {
   func_global();
   func_faceWorks();
+  func_portfolioWorks();
   // func_mindConnections();
   func_heroForm();
   func_collapseButtons();
