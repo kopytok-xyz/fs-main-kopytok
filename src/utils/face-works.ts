@@ -1,18 +1,20 @@
 export const func_faceWorks = () => {
-  // Получаем все секции-триггеры
-  const triggers = document.querySelectorAll('.work-face-section-trigger');
-  // Получаем все элементы с атрибутом face-work-canvas
-  const canvases = document.querySelectorAll('[face-work-canvas]');
+  // Получаем элемент tunnel
+  const tunnel = document.querySelector('.tunnel');
+
+  if (!tunnel) return;
+
+  // Получаем все секции-триггеры внутри tunnel
+  const triggers = tunnel.querySelectorAll('.work-face-section-trigger');
+  // Получаем все элементы с атрибутом face-work-canvas внутри tunnel
+  const canvases = tunnel.querySelectorAll('[face-work-canvas]');
 
   if (triggers.length && canvases.length) {
     // Функция для получения параметров последовательности из атрибутов
     const getSequenceParams = (canvas) => {
       const framesLink = canvas.getAttribute('frames-link');
       const finalFrame = parseInt(canvas.getAttribute('final-frame'));
-
-      // Извлекаем базовый URL, заменяя звездочку на плейсхолдер для номера кадра
       const baseUrl = framesLink.replace('*', '');
-
       return { baseUrl, finalFrame };
     };
 
