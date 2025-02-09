@@ -312,11 +312,47 @@ export const func_portfolioWorks = () => {
   const setupPortfolioToggles = () => {
     const portfolioItems = document.querySelectorAll('[portfolio-item]');
 
-    portfolioItems.forEach((item) => {
-      // Устанавливаем начальное состояние
-      item.setAttribute('portfolio-item', 'hidden');
+    // Устанавливаем начальное состояние
+    portfolioItems.forEach((item, index) => {
+      const contentElement = item.querySelector('[portfolio-item-toggle-content]');
+      if (!contentElement) return;
 
-      // Находим элементы, которые не должны триггерить тоггл
+      if (index === 0) {
+        item.setAttribute('portfolio-item', 'visible');
+        contentElement.style.height = `${contentElement.scrollHeight}px`;
+        contentElement.style.transition = 'height 0.3s ease';
+      } else {
+        item.setAttribute('portfolio-item', 'hidden');
+        contentElement.style.height = '0px';
+        contentElement.style.transition = 'height 0.3s ease';
+      }
+
+      // Добавляем обработчик для анимации
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.attributeName === 'portfolio-item') {
+            const isVisible = item.getAttribute('portfolio-item') === 'visible';
+            const contentElement = item.querySelector('[portfolio-item-toggle-content]');
+
+            if (contentElement) {
+              if (isVisible) {
+                contentElement.style.height = `${contentElement.scrollHeight}px`;
+              } else {
+                contentElement.style.height = '0px';
+              }
+            }
+          }
+        });
+      });
+
+      observer.observe(item, {
+        attributes: true,
+        attributeFilter: ['portfolio-item'],
+      });
+    });
+
+    // Остальной код обработчиков кликов остается без изменений
+    portfolioItems.forEach((item) => {
       const ignoreElements = item.querySelectorAll('[portfolio-item-toggle-ignore]');
       const autoToggleElements = item.querySelectorAll('[portfolio-item-toggle-auto]');
 
