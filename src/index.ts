@@ -31,10 +31,10 @@ window.Webflow.push(() => {
   func_buttonTextToggl();
   func_statsHero();
   func_yearCounter();
-  // func_togglClassTriggerTarget();
+  func_togglClassTriggerTarget();
   // func_mindConnectionsLeader();
   // func_cardFly();
-  // func_testimonialsGrid();
-  // func_fav();
+  func_testimonialsGrid();
+  func_fav();
   // func_portfolioTable();
 });
