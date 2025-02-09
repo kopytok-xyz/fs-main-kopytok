@@ -8,6 +8,9 @@ export const func_mindConnectionsLeader = () => {
     let previousWindowWidth = window.innerWidth; // Предыдущая ширина окна
     let shouldUpdateLines = true; // Флаг для контроля обновления линий
 
+    // Добавляем переменную для отслеживания таймаута
+    let resizeTimeout = null;
+
     // Функция для отрисовки всех соединений
     function drawConnections() {
       // Если SVG еще не создан, создаем его
@@ -34,6 +37,11 @@ export const func_mindConnectionsLeader = () => {
       const lineColor = '#666666'; // Цвет линий
 
       connections.forEach((startEl) => {
+        // Добавим проверку и установку opacity для точек соединения
+        if (startEl.classList.contains('connection-dot')) {
+          startEl.style.opacity = '1';
+        }
+
         const targetSelectors = startEl.getAttribute('mind-connection').split(',');
 
         targetSelectors.forEach((targetSelector) => {
@@ -41,6 +49,11 @@ export const func_mindConnectionsLeader = () => {
           const endEl = document.querySelector(`[mind-connection="${trimmedSelector}"]`);
 
           if (!endEl) return;
+
+          // Проверяем и устанавливаем opacity для конечной точки
+          if (endEl.classList.contains('connection-dot')) {
+            endEl.style.opacity = '1';
+          }
 
           // Проверяем, нужно ли пропустить отрисовку линии на мобильных устройствах
           const isMobile = window.innerWidth < 768;
@@ -83,11 +96,19 @@ export const func_mindConnectionsLeader = () => {
           updateLine(connection);
         });
       });
+
+      setTimeout(() => {
+        document.querySelectorAll('.connection-dot').forEach((dot) => {
+          dot.style.opacity = '1';
+          // Добавим плавный переход
+          dot.style.transition = 'opacity 0.3s ease';
+        });
+      }, 100); // Небольшая задержка для уверенности, что все соединения отрисованы
     }
 
-    // Функция для обновления линии
+    // Оптимизируем функцию updateLine
     function updateLine(connection) {
-      const { startEl, endEl, pathElement, isHorizontalStart } = connection;
+      const { startEl, endEl, pathElement } = connection;
       const startRect = startEl.getBoundingClientRect();
       const endRect = endEl.getBoundingClientRect();
 
@@ -96,48 +117,24 @@ export const func_mindConnectionsLeader = () => {
       const x2 = endRect.left + endRect.width / 2 + window.scrollX;
       const y2 = endRect.top + endRect.height / 2 + window.scrollY;
 
-      let path;
-      const currentLineStyle = lineStyles[currentLineStyleIndex];
-
-      if (currentLineStyle === 'straight') {
-        // Прямая линия
-        path = `M ${x1} ${y1} L ${x2} ${y2}`;
-      } else if (currentLineStyle === 'curved') {
-        // Плавная кривая (используем ваш оригинальный код)
-        const dx = (x2 - x1) / 2;
-        const dy = (y2 - y1) / 2;
-        path = `M ${x1} ${y1} Q ${x1} ${y1 + dy}, ${x1 + dx} ${y1 + dy} T ${x2} ${y2}`;
-      } else if (currentLineStyle === 'grid') {
-        // Ломаная линия с углами
-        if (isHorizontalStart === null) {
-          // Если направление не указано, рисуем прямую линию
-          path = `M ${x1} ${y1} L ${x2} ${y2}`;
-        } else if (isHorizontalStart) {
-          // Горизонтальное начало
-          path = `M ${x1} ${y1} H ${x2} V ${y2}`;
-        } else {
-          // Вертикальное начало
-          path = `M ${x1} ${y1} V ${y2} H ${x2}`;
-        }
-      }
-
-      const previousPath = pathElement.getAttribute('d');
-      if (previousPath !== path) {
-        // Анимируем переход между путями
-        pathElement.animate([{ d: previousPath }, { d: path }], {
-          duration: 1000,
-          fill: 'forwards',
-        });
-        pathElement.setAttribute('d', path);
-      }
+      // Просто обновляем путь без анимации при ресайзе
+      const path = `M ${x1} ${y1} L ${x2} ${y2}`;
+      pathElement.setAttribute('d', path);
     }
 
-    // Функция для обновления всех линий (используется для анимации)
+    // Оптимизируем функцию updateAllLines
     function updateAllLines() {
-      if (!shouldUpdateLines) return;
+      if (!shouldUpdateLines || document.hidden) return;
+
       connectionsData.forEach((connection) => {
-        updateLine(connection);
+        const startElVisible = connection.startEl.offsetParent !== null;
+        const endElVisible = connection.endEl.offsetParent !== null;
+
+        if (startElVisible && endElVisible) {
+          updateLine(connection);
+        }
       });
+
       requestAnimationFrame(updateAllLines);
     }
 
@@ -203,51 +200,59 @@ export const func_mindConnectionsLeader = () => {
     // Добавляем обработчики наведения
     addHoverListeners();
 
-    // Перерисовка при изменении размера окна
+    // Добавляем дебаунс для обработки ресайза
     window.addEventListener('resize', () => {
-      // Используем debounce, чтобы не вызывать функцию слишком часто
-      clearTimeout(window.resizeTimeout);
-      window.resizeTimeout = setTimeout(() => {
-        handleResize();
-      }, 100);
-    });
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
 
-    function handleResize() {
-      const currentWindowWidth = window.innerWidth;
+      shouldUpdateLines = false; // Останавливаем обновления на время ресайза
 
-      // Проверяем, пересекли ли мы какую-либо из контрольных точек
-      let crossedBreakpoint = false;
-
-      for (const breakpoint of breakpoints) {
-        if (
-          (previousWindowWidth < breakpoint && currentWindowWidth >= breakpoint) ||
-          (previousWindowWidth >= breakpoint && currentWindowWidth < breakpoint)
-        ) {
-          crossedBreakpoint = true;
-          break;
+      resizeTimeout = setTimeout(() => {
+        const currentWidth = window.innerWidth;
+        // Проверяем, действительно ли изменилась ширина
+        if (currentWidth !== previousWindowWidth) {
+          previousWindowWidth = currentWidth;
+          shouldUpdateLines = true;
+          // Обновляем все линии разом после окончания ресайза
+          connectionsData.forEach((connection) => {
+            updateLine(connection);
+          });
         }
-      }
-
-      if (crossedBreakpoint) {
-        // Перезапускаем скрипт
-        restartScript();
-      } else {
-        // Просто перерисовываем соединения
-        drawConnections();
-      }
-
-      previousWindowWidth = currentWindowWidth;
-    }
+      }, 150); // Задержка в 150мс после последнего события ресайза
+    });
 
     // Наблюдатель за изменениями в DOM
-    const observer = new MutationObserver(() => {
-      connectionsData.forEach((connection) => {
-        updateLine(connection);
+    const observer = new MutationObserver((mutations) => {
+      // Проверяем, затрагивают ли изменения наши элементы
+      const shouldUpdate = mutations.some((mutation) => {
+        return connectionsData.some(
+          (connection) =>
+            mutation.target.contains(connection.startEl) ||
+            mutation.target.contains(connection.endEl)
+        );
       });
+
+      if (shouldUpdate) {
+        connectionsData.forEach((connection) => {
+          const startElVisible = connection.startEl.offsetParent !== null;
+          const endElVisible = connection.endEl.offsetParent !== null;
+
+          if (startElVisible && endElVisible) {
+            updateLine(connection);
+          }
+        });
+      }
     });
 
-    // Настройки наблюдателя
-    const config = { attributes: true, childList: true, subtree: true, characterData: true };
+    // Изменяем настройки наблюдателя для оптимизации
+    const config = {
+      attributes: true,
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributeFilter: ['style', 'class'], // Следим только за relevant атрибутами
+    };
 
     // Начинаем наблюдение за документом
     observer.observe(document.body, config);

@@ -1,17 +1,12 @@
-// import { func_draggableElem } from '$utils/draggable-elements';
-// import { func_interactiveZone } from '$utils/interactive-zone';
 import { func_buttonTextToggl } from '$utils/button-text-toggl';
 import { func_collapseButtons } from '$utils/collapse-buttons';
 import { func_faceWorks } from '$utils/face-works';
 import { func_fav } from '$utils/fav';
-import { func_cardFly } from '$utils/func_card-fly';
 import { func_portfolioWorks } from '$utils/func-portfolio-works';
 import { func_global } from '$utils/global';
 import { func_heightTransition } from '$utils/height-transition';
 import { func_heroForm } from '$utils/hero-form';
-// import { func_mindConnections } from '$utils/mind-connections';
 import { func_mindConnectionsLeader } from '$utils/mind-connections-leader';
-// import { func_portfolioTable } from '$utils/portfolio-table';
 import { func_statsHero } from '$utils/stats-hero';
 import { func_syncClick } from '$utils/sync-click';
 import { func_testimonialsGrid } from '$utils/testimonials-grid';
@@ -23,7 +18,6 @@ window.Webflow.push(() => {
   func_global();
   func_faceWorks();
   func_portfolioWorks();
-  // func_mindConnections();
   func_heroForm();
   func_collapseButtons();
   func_heightTransition();
@@ -32,9 +26,7 @@ window.Webflow.push(() => {
   func_statsHero();
   func_yearCounter();
   func_togglClassTriggerTarget();
-  // func_mindConnectionsLeader();
-  // func_cardFly();
+  func_mindConnectionsLeader();
   func_testimonialsGrid();
   func_fav();
-  // func_portfolioTable();
 });

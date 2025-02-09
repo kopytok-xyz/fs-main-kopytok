@@ -28,8 +28,17 @@ export const func_mindConnections = () => {
       svg.style.left = '0';
       svg.style.width = '100%';
       svg.style.height = '100%';
-      svg.style.pointerEvents = 'none'; // Чтобы не блокировал клики
-      svg.style.zIndex = '1'; // Устанавливаем ниже, чем у элементов
+      svg.style.pointerEvents = 'none';
+      svg.style.zIndex = '1';
+      svg.style.overflow = 'visible';
+
+      // Обновляем viewBox при изменении размера окна
+      const updateViewBox = () => {
+        svg.setAttribute('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight}`);
+      };
+      window.addEventListener('resize', updateViewBox);
+      updateViewBox();
+
       document.body.appendChild(svg);
     }
 
@@ -38,30 +47,48 @@ export const func_mindConnections = () => {
 
     Object.values(groups).forEach((group) => {
       if (group.length >= 2) {
-        // Соединяем каждый элемент с каждым другим в группе
         for (let i = 0; i < group.length; i++) {
           for (let j = i + 1; j < group.length; j++) {
             const el1 = group[i];
             const el2 = group[j];
 
+            // Проверяем видимость элементов
+            const isVisible = (el) => {
+              const style = window.getComputedStyle(el);
+              return (
+                style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0'
+              );
+            };
+
+            if (!isVisible(el1) || !isVisible(el2)) continue;
+
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('stroke', 'rgb(102, 102, 102)'); // Серый цвет
+            line.setAttribute('stroke', 'rgb(102, 102, 102)');
             line.setAttribute('stroke-width', '1');
-            // Изначально линия имеет нулевую длину (точка)
+            line.setAttribute('vector-effect', 'non-scaling-stroke');
+
             const rect1 = el1.getBoundingClientRect();
             const rect2 = el2.getBoundingClientRect();
+
+            // Проверяем валидность координат
+            if (isNaN(rect1.left) || isNaN(rect1.top) || isNaN(rect2.left) || isNaN(rect2.top)) {
+              continue;
+            }
+
             const initialX = rect1.left + rect1.width / 2;
             const initialY = rect1.top + rect1.height / 2;
-            line.setAttribute('x1', initialX);
-            line.setAttribute('y1', initialY);
-            line.setAttribute('x2', initialX);
-            line.setAttribute('y2', initialY);
+
+            line.setAttribute('x1', initialX.toString());
+            line.setAttribute('y1', initialY.toString());
+            line.setAttribute('x2', initialX.toString());
+            line.setAttribute('y2', initialY.toString());
+
             svg.appendChild(line);
             lines.push({
               line,
               el1,
               el2,
-              animated: false, // Флаг для отслеживания анимации
+              animated: false,
             });
           }
         }
@@ -114,24 +141,33 @@ export const func_mindConnections = () => {
 
     // Функция для обновления позиций линий
     const updatePositions = () => {
+      // Добавляем проверку на существование элементов
       lines.forEach(({ line, el1, el2, animated }) => {
+        if (!document.body.contains(el1) || !document.body.contains(el2)) {
+          line.remove();
+          return;
+        }
+
         const rect1 = el1.getBoundingClientRect();
         const rect2 = el2.getBoundingClientRect();
+
+        // Проверяем валидность координат
+        if (isNaN(rect1.left) || isNaN(rect1.top) || isNaN(rect2.left) || isNaN(rect2.top)) {
+          return;
+        }
 
         const x1 = rect1.left + rect1.width / 2;
         const y1 = rect1.top + rect1.height / 2;
         const x2 = rect2.left + rect2.width / 2;
         const y2 = rect2.top + rect2.height / 2;
 
-        line.setAttribute('x1', x1);
-        line.setAttribute('y1', y1);
+        line.setAttribute('x1', x1.toString());
+        line.setAttribute('y1', y1.toString());
 
         if (animated) {
-          // Если анимация завершена, обновляем конечные позиции
-          line.setAttribute('x2', x2);
-          line.setAttribute('y2', y2);
+          line.setAttribute('x2', x2.toString());
+          line.setAttribute('y2', y2.toString());
         }
-        // Если анимация ещё не завершена, позиции x2 и y2 управляются анимацией
       });
 
       requestAnimationFrame(updatePositions);
