@@ -3,6 +3,177 @@ export const func_portfolioWorks = () => {
 
   if (!canvases.length) return;
 
+  // Очередь загрузки канвасов
+  const loadingQueue = new Map();
+
+  // Функция для генерации последовательности загрузки кадров
+  const generateLoadingSequence = (finalFrame) => {
+    const sequences = [];
+    // Первая последовательность - каждые 10%
+    sequences.push(
+      Array.from({ length: Math.ceil(finalFrame / 100) + 1 }, (_, i) => i * 100).filter(
+        (n) => n <= finalFrame
+      )
+    );
+
+    // Вторая последовательность - каждые 5%
+    sequences.push(
+      Array.from({ length: Math.ceil(finalFrame / 50) + 1 }, (_, i) => i * 50).filter(
+        (n) => n <= finalFrame
+      )
+    );
+
+    // Финальная последовательность - все оставшиеся кадры
+    sequences.push(Array.from({ length: finalFrame + 1 }, (_, i) => i));
+
+    return sequences;
+  };
+
+  // Функция для загрузки изображений с приоритетом
+  const preloadImagesWithPriority = async (baseUrl, finalFrame, onProgress) => {
+    const sequences = generateLoadingSequence(finalFrame);
+    const loadedImages = new Array(finalFrame + 1);
+
+    for (const sequence of sequences) {
+      await Promise.all(
+        sequence
+          .filter((frameIndex) => frameIndex <= finalFrame)
+          .map(async (frameIndex) => {
+            if (!loadedImages[frameIndex]) {
+              try {
+                const img = new Image();
+                const src = currentFrame(baseUrl, frameIndex);
+
+                img.src = src;
+                await new Promise((resolve, reject) => {
+                  img.onload = () => resolve(img);
+                  img.onerror = () => reject(new Error(`Failed to load ${src}`));
+                });
+
+                loadedImages[frameIndex] = img;
+                onProgress?.(loadedImages.filter(Boolean));
+              } catch (error) {
+                console.warn(`Failed to load frame ${frameIndex}:`, error);
+              }
+            }
+          })
+      );
+    }
+
+    return loadedImages.filter(Boolean);
+  };
+
+  // Общая функция drawFrame для всех канвасов
+  const drawFrame = (context, canvasContainer, img) => {
+    if (!img) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvasContainer.getBoundingClientRect();
+    const { canvas } = context;
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.scale(dpr, dpr);
+
+    const canvasRatio = rect.width / rect.height;
+    const imageRatio = img.width / img.height;
+
+    let drawWidth, drawHeight, x, y;
+
+    if (canvasRatio > imageRatio) {
+      drawWidth = rect.width;
+      drawHeight = rect.width / imageRatio;
+      x = 0;
+      y = (rect.height - drawHeight) / 2;
+    } else {
+      drawHeight = rect.height;
+      drawWidth = rect.height * imageRatio;
+      x = (rect.width - drawWidth) / 2;
+      y = 0;
+    }
+
+    context.drawImage(img, x, y, drawWidth, drawHeight);
+  };
+
+  // Добавляем функцию updateCanvasImages после функции preloadImagesWithPriority
+  const updateCanvasImages = (canvasContainer, images) => {
+    const slider = canvasContainer
+      .closest('.div-block-85')
+      ?.querySelector('.fs-rangeslider_handle');
+
+    if (!slider) return;
+
+    const canvas = canvasContainer.querySelector('canvas');
+    const context = canvas?.getContext('2d');
+    if (!context || !canvas) return;
+
+    const updateFrame = () => {
+      const currentValue = parseInt(slider.getAttribute('aria-valuenow')) || 0;
+      const frameIndex = Math.floor((currentValue / 3000) * (images.length - 1));
+
+      if (images[frameIndex]) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        drawFrame(context, canvasContainer, images[frameIndex]);
+      }
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'aria-valuenow') {
+          requestAnimationFrame(updateFrame);
+        }
+      });
+    });
+
+    observer.observe(slider, {
+      attributes: true,
+      attributeFilter: ['aria-valuenow'],
+    });
+  };
+
+  // Функция управления очередью загрузки
+  const manageLoadingQueue = (canvasContainer, isVisible) => {
+    const containerId = canvasContainer.dataset.canvasId;
+
+    if (isVisible) {
+      // Добавляем в очередь
+      loadingQueue.set(containerId, canvasContainer);
+    } else {
+      // Удаляем из очереди
+      loadingQueue.delete(containerId);
+    }
+
+    // Запускаем загрузку для следующего в очереди
+    processLoadingQueue();
+  };
+
+  // Обработка очереди загрузки
+  const processLoadingQueue = () => {
+    const queueEntries = Array.from(loadingQueue.entries());
+    if (queueEntries.length === 0) return;
+
+    // Получаем последний добавленный канвас
+    const [latestId, latestCanvas] = queueEntries[queueEntries.length - 1];
+
+    // Начинаем загрузку если она еще не началась
+    if (!latestCanvas.dataset.loading) {
+      latestCanvas.dataset.loading = 'true';
+      const { baseUrl, finalFrame } = getSequenceParams(latestCanvas);
+
+      preloadImagesWithPriority(baseUrl, finalFrame, (images) => {
+        updateCanvasImages(latestCanvas, images);
+      }).then(() => {
+        latestCanvas.dataset.loading = 'complete';
+        // После загрузки текущего канваса, переходим к следующему в очереди
+        loadingQueue.delete(latestId);
+        processLoadingQueue();
+      });
+    }
+  };
+
   // Функция для получения параметров последовательности из атрибутов
   const getSequenceParams = (canvas) => {
     const framesLink = canvas.getAttribute('frames-link');
@@ -75,7 +246,10 @@ export const func_portfolioWorks = () => {
   };
 
   // Инициализация для каждого canvas
-  canvases.forEach((canvasContainer) => {
+  canvases.forEach((canvasContainer, index) => {
+    // Присваиваем уникальный ID
+    canvasContainer.dataset.canvasId = `canvas-${index}`;
+
     const { baseUrl, finalFrame } = getSequenceParams(canvasContainer);
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -102,88 +276,35 @@ export const func_portfolioWorks = () => {
       context.scale(dpr, dpr);
     };
 
-    const drawFrame = (img) => {
-      if (!img) return;
-
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvasContainer.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
-      context.setTransform(1, 0, 0, 1, 0, 0);
-      context.scale(dpr, dpr);
-
-      const canvasRatio = rect.width / rect.height;
-      const imageRatio = img.width / img.height;
-
-      let drawWidth, drawHeight, x, y;
-
-      if (canvasRatio > imageRatio) {
-        drawWidth = rect.width;
-        drawHeight = rect.width / imageRatio;
-        x = 0;
-        y = (rect.height - drawHeight) / 2;
-      } else {
-        drawHeight = rect.height;
-        drawWidth = rect.height * imageRatio;
-        x = (rect.width - drawWidth) / 2;
-        y = 0;
-      }
-
-      context.drawImage(img, x, y, drawWidth, drawHeight);
-    };
-
     const resizeObserver = new ResizeObserver(updateCanvasSize);
     resizeObserver.observe(canvasContainer);
 
     updateCanvasSize();
     canvasContainer.appendChild(canvas);
 
-    // Загружаем первый кадр
+    // Загружаем первый кадр немедленно
     const firstFrame = new Image();
     firstFrame.onload = () => {
       context.clearRect(0, 0, canvas.width, canvas.height);
-      drawFrame(firstFrame);
+      drawFrame(context, canvasContainer, firstFrame);
     };
     firstFrame.src = currentFrame(baseUrl, 0);
 
-    // Загружаем остальные кадры и настраиваем наблюдение за aria-valuenow
-    preloadImages(baseUrl, finalFrame).then((sequenceImages) => {
-      const slider = canvasContainer
-        .closest('.div-block-85')
-        .querySelector('.fs-rangeslider_handle');
-
-      const updateFrame = () => {
-        const currentValue = parseInt(slider.getAttribute('aria-valuenow')) || 0;
-        const frameIndex = Math.floor((currentValue / 1000) * finalFrame);
-
-        if (sequenceImages[frameIndex]) {
-          context.clearRect(0, 0, canvas.width, canvas.height);
-          drawFrame(sequenceImages[frameIndex]);
+    // Наблюдаем за видимостью
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'portfolio-item') {
+          const isVisible =
+            canvasContainer.closest('[portfolio-item]').getAttribute('portfolio-item') ===
+            'visible';
+          manageLoadingQueue(canvasContainer, isVisible);
         }
-      };
-
-      // Наблюдаем за изменениями aria-valuenow
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.attributeName === 'aria-valuenow') {
-            updateFrame();
-          }
-        });
       });
+    });
 
-      observer.observe(slider, {
-        attributes: true,
-        attributeFilter: ['aria-valuenow'],
-      });
-
-      window.addEventListener('resize', () => {
-        requestAnimationFrame(() => {
-          updateCanvasSize();
-          updateFrame();
-        });
-      });
+    observer.observe(canvasContainer.closest('[portfolio-item]'), {
+      attributes: true,
+      attributeFilter: ['portfolio-item'],
     });
   });
 
@@ -199,7 +320,7 @@ export const func_portfolioWorks = () => {
       const ignoreElements = item.querySelectorAll('[portfolio-item-toggle-ignore]');
       const autoToggleElements = item.querySelectorAll('[portfolio-item-toggle-auto]');
 
-      // Добавляем обработчик клика
+      // Добавляем обработчик клика на сам элемент portfolio-item
       item.addEventListener('click', (e) => {
         // Проверяем, не является ли целевой элемент или его родители игнорируемыми
         let shouldIgnore = false;
@@ -215,7 +336,6 @@ export const func_portfolioWorks = () => {
 
         // Если клик был на игнорируемом элементе и не на auto-toggle, прекращаем выполнение
         if (shouldIgnore) {
-          // Проверяем, был ли клик на auto-toggle элементе
           let isAutoToggle = false;
           target = e.target as HTMLElement;
 
@@ -235,7 +355,7 @@ export const func_portfolioWorks = () => {
         const newState = currentState === 'hidden' ? 'visible' : 'hidden';
         item.setAttribute('portfolio-item', newState);
 
-        // Находим и кликаем на триггер
+        // Находим и кликаем на ближайший триггер
         const trigger = item.querySelector('[work-toggl-trigger]');
         if (trigger) {
           trigger.dispatchEvent(
