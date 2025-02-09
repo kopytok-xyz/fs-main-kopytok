@@ -186,4 +186,87 @@ export const func_portfolioWorks = () => {
       });
     });
   });
+
+  // Добавляем функцию для работы с тогглом портфолио
+  const setupPortfolioToggles = () => {
+    const portfolioItems = document.querySelectorAll('[portfolio-item]');
+
+    portfolioItems.forEach((item) => {
+      // Устанавливаем начальное состояние
+      item.setAttribute('portfolio-item', 'hidden');
+
+      // Находим элементы, которые не должны триггерить тоггл
+      const ignoreElements = item.querySelectorAll('[portfolio-item-toggle-ignore]');
+      const autoToggleElements = item.querySelectorAll('[portfolio-item-toggle-auto]');
+
+      // Добавляем обработчик клика
+      item.addEventListener('click', (e) => {
+        // Проверяем, не является ли целевой элемент или его родители игнорируемыми
+        let shouldIgnore = false;
+        let target = e.target as HTMLElement;
+
+        while (target && target !== item) {
+          if (target.hasAttribute('portfolio-item-toggle-ignore')) {
+            shouldIgnore = true;
+            break;
+          }
+          target = target.parentElement;
+        }
+
+        // Если клик был на игнорируемом элементе и не на auto-toggle, прекращаем выполнение
+        if (shouldIgnore) {
+          // Проверяем, был ли клик на auto-toggle элементе
+          let isAutoToggle = false;
+          target = e.target as HTMLElement;
+
+          while (target && target !== item) {
+            if (target.hasAttribute('portfolio-item-toggle-auto')) {
+              isAutoToggle = true;
+              break;
+            }
+            target = target.parentElement;
+          }
+
+          if (!isAutoToggle) return;
+        }
+
+        // Переключаем состояние
+        const currentState = item.getAttribute('portfolio-item');
+        const newState = currentState === 'hidden' ? 'visible' : 'hidden';
+        item.setAttribute('portfolio-item', newState);
+
+        // Находим и кликаем на триггер
+        const trigger = item.querySelector('[work-toggl-trigger]');
+        if (trigger) {
+          trigger.dispatchEvent(
+            new MouseEvent('click', {
+              view: window,
+              bubbles: true,
+              cancelable: true,
+            })
+          );
+        }
+
+        // Закрываем все остальные открытые элементы
+        portfolioItems.forEach((otherItem) => {
+          if (otherItem !== item && otherItem.getAttribute('portfolio-item') === 'visible') {
+            otherItem.setAttribute('portfolio-item', 'hidden');
+            const otherTrigger = otherItem.querySelector('[work-toggl-trigger]');
+            if (otherTrigger) {
+              otherTrigger.dispatchEvent(
+                new MouseEvent('click', {
+                  view: window,
+                  bubbles: true,
+                  cancelable: true,
+                })
+              );
+            }
+          }
+        });
+      });
+    });
+  };
+
+  // Вызываем функцию настройки тогглов после инициализации канвасов
+  setupPortfolioToggles();
 };
