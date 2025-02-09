@@ -312,33 +312,45 @@ export const func_portfolioWorks = () => {
   const setupPortfolioToggles = () => {
     const portfolioItems = document.querySelectorAll('[portfolio-item]');
 
-    // Устанавливаем начальное состояние
     portfolioItems.forEach((item, index) => {
       const contentElement = item.querySelector('[portfolio-item-toggle-content]');
+      const toggleIcon = item.querySelector('[project-item-toggle]');
       if (!contentElement) return;
 
       if (index === 0) {
         item.setAttribute('portfolio-item', 'visible');
         contentElement.style.height = `${contentElement.scrollHeight}px`;
         contentElement.style.transition = 'height 0.3s ease';
+        if (toggleIcon) {
+          toggleIcon.style.transform = 'rotate(180deg)';
+        }
       } else {
         item.setAttribute('portfolio-item', 'hidden');
         contentElement.style.height = '0px';
         contentElement.style.transition = 'height 0.3s ease';
+        if (toggleIcon) {
+          toggleIcon.style.transform = 'rotate(0deg)';
+        }
       }
 
-      // Добавляем обработчик для анимации
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.attributeName === 'portfolio-item') {
             const isVisible = item.getAttribute('portfolio-item') === 'visible';
             const contentElement = item.querySelector('[portfolio-item-toggle-content]');
+            const toggleIcon = item.querySelector('[project-item-toggle]');
 
             if (contentElement) {
               if (isVisible) {
                 contentElement.style.height = `${contentElement.scrollHeight}px`;
+                if (toggleIcon) {
+                  toggleIcon.style.transform = 'rotate(180deg)';
+                }
               } else {
                 contentElement.style.height = '0px';
+                if (toggleIcon) {
+                  toggleIcon.style.transform = 'rotate(0deg)';
+                }
               }
             }
           }
