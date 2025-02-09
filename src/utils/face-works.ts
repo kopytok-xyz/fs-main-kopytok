@@ -167,10 +167,15 @@ export const func_faceWorks = () => {
         const rect = canvasContainer.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
 
+        // Устанавливаем размеры canvas в пикселях с учетом DPI
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
 
-        // Сбрасываем трансформацию
+        // Устанавливаем CSS размеры canvas
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+
+        // Масштабируем контекст
         context.setTransform(1, 0, 0, 1, 0, 0);
         context.scale(dpr, dpr);
       };
@@ -178,25 +183,41 @@ export const func_faceWorks = () => {
       const drawFrame = (img) => {
         if (!img) return;
 
-        const canvasRatio = canvas.width / canvas.height;
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvasContainer.getBoundingClientRect();
+
+        // Устанавливаем физические размеры canvas с учетом DPR
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+
+        // Устанавливаем CSS размеры canvas
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+
+        // Масштабируем контекст
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.scale(dpr, dpr);
+
+        const canvasRatio = rect.width / rect.height;
         const imageRatio = img.width / img.height;
 
         let drawWidth, drawHeight, x, y;
 
         if (canvasRatio > imageRatio) {
-          // Канвас шире изображения - подгоняем по ширине
-          drawWidth = canvas.width;
-          drawHeight = canvas.width / imageRatio;
+          // Canvas шире изображения - подгоняем по ширине
+          drawWidth = rect.width;
+          drawHeight = rect.width / imageRatio;
           x = 0;
-          y = (canvas.height - drawHeight) / 2;
+          y = (rect.height - drawHeight) / 2;
         } else {
-          // Канвас выше изображения - подгоняем по высоте
-          drawHeight = canvas.height;
-          drawWidth = canvas.height * imageRatio;
-          x = (canvas.width - drawWidth) / 2;
+          // Canvas выше изображения - подгоняем по высоте
+          drawHeight = rect.height;
+          drawWidth = rect.height * imageRatio;
+          x = (rect.width - drawWidth) / 2;
           y = 0;
         }
 
+        // Рисуем изображение с учетом масштабирования
         context.drawImage(img, x, y, drawWidth, drawHeight);
       };
 
@@ -240,6 +261,15 @@ export const func_faceWorks = () => {
               }
             },
           },
+        });
+
+        window.addEventListener('resize', () => {
+          requestAnimationFrame(() => {
+            updateCanvasSize();
+            if (sequenceImages[frameIndex]) {
+              drawFrame(sequenceImages[frameIndex]);
+            }
+          });
         });
       });
     });
