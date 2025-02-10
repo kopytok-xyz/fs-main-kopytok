@@ -1,9 +1,15 @@
 export const func_mindConnectionsLeader = () => {
   let lastDrawTimeout: NodeJS.Timeout | null = null;
   const lines: LeaderLine[] = [];
+  const shouldUpdateLines = true;
+
+  const updateAllLines = () => {
+    if (!shouldUpdateLines) return;
+    lines.forEach((line) => line.position());
+    requestAnimationFrame(updateAllLines);
+  };
 
   const drawConnections = (isRetry = false) => {
-    // Удаляем предыдущие линии
     lines.forEach((line) => line.remove());
     lines.length = 0;
 
@@ -30,18 +36,18 @@ export const func_mindConnectionsLeader = () => {
           color: '#666666',
           size: 1,
           path: 'straight',
-          startSocket: 'bottom',
-          endSocket: 'top',
+          startSocket: 'center',
+          endSocket: 'center',
           startPlug: 'behind',
           endPlug: 'behind',
           endPlugSize: 1,
           startPlugSize: 1,
+          elementAnchor: 'center',
         });
         lines.push(line);
       }
     });
 
-    // Устанавливаем отложенную проверку только если это не повторная попытка
     if (!isRetry) {
       if (lastDrawTimeout) {
         clearTimeout(lastDrawTimeout);
@@ -53,9 +59,7 @@ export const func_mindConnectionsLeader = () => {
     }
   };
 
-  // Первичная отрисовка
   drawConnections();
-
-  // Добавляем слушатель ресайза
+  requestAnimationFrame(updateAllLines);
   window.addEventListener('resize', () => drawConnections());
 };
