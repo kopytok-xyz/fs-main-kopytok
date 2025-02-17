@@ -92,30 +92,40 @@ export const func_mindConnectionsLeader = () => {
   // Инициализация
   const init = () => {
     const svg = createSvgContainer();
-    const connections = getConnections();
+    let connections = getConnections();
 
     if (connections.length > 0) {
       console.log('Найдены соединения:', connections.length);
-      drawLines(svg, connections);
 
-      let resizeTimeout: NodeJS.Timeout;
-
-      window.addEventListener('resize', () => {
-        // Используем debounce для оптимизации
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-          const connections = getConnections(); // Получаем актуальные соединения
-          drawLines(svg, connections);
-        }, 150); // Задержка 150мс
-      });
-
-      // Добавляем обработчик прокрутки
-      window.addEventListener('scroll', () => {
+      // Функция обновления линий
+      const updateAllLines = () => {
+        connections = getConnections(); // Обновляем список соединений
         drawLines(svg, connections);
+        requestAnimationFrame(updateAllLines);
+      };
+
+      // Запускаем постоянное обновление
+      requestAnimationFrame(updateAllLines);
+
+      // Наблюдатель за изменениями в DOM
+      const observer = new MutationObserver(() => {
+        connections = getConnections();
       });
-    } else {
-      console.log('Соединения не найдены');
+
+      // Настройки наблюдателя
+      observer.observe(document.body, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+
+      // Очистка при уничтожении
+      return () => {
+        observer.disconnect();
+      };
     }
+    console.log('Соединения не найдены');
   };
 
   init();
