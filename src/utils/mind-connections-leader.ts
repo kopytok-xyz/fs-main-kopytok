@@ -1,9 +1,11 @@
 export const func_mindConnectionsLeader = () => {
+  // Если родительский контейнер является document.body, оставляем z-index -1, иначе используем 0
   const createSvgContainerIn = (parent: Element) => {
     let svg = parent.querySelector('#connection-svg') as SVGElement;
     if (!svg) {
       svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('id', 'connection-svg');
+      const zIndexValue = parent === document.body ? '-1' : '0';
       Object.assign(svg.style, {
         position: 'absolute',
         top: '0',
@@ -12,7 +14,7 @@ export const func_mindConnectionsLeader = () => {
         height: '100%',
         pointerEvents: 'none',
         overflow: 'visible',
-        zIndex: '9999',
+        zIndex: zIndexValue,
       });
       parent.insertBefore(svg, parent.firstChild);
     }
@@ -68,7 +70,7 @@ export const func_mindConnectionsLeader = () => {
     return connections;
   };
 
-  // Отрисовка линий для заданного svg-контейнера с учетом его привязки
+  // Отрисовка линий для заданного SVG-контейнера с учётом его привязки
   const drawLines = (svg: SVGElement, connections: Array<{ from: Element; to: Element }>) => {
     // Очищаем предыдущие линии
     svg.innerHTML = '';
@@ -123,13 +125,10 @@ export const func_mindConnectionsLeader = () => {
     const initialConnections = getConnections();
     if (initialConnections.length > 0) {
       console.log('Найдены соединения:', initialConnections.length);
-
-      // Запускаем обновление линий
       requestAnimationFrame(updateAllLines);
 
-      // Наблюдатель за изменениями в DOM (при необходимости можно добавить вызов updateAllLines)
       const observer = new MutationObserver(() => {
-        // При изменениях в DOM линии будут обновляться в следующем кадре
+        // Линии обновятся в следующем кадре при изменениях в DOM
       });
       observer.observe(document.body, {
         attributes: true,
