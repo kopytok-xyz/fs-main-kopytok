@@ -115,32 +115,27 @@ export const func_mindConnectionsLeader = () => {
   // Функция отрисовки линий с использованием нового getLineColor
   const drawLines = (svg: SVGElement, connections: Array<{ from: Element; to: Element }>) => {
     logThrottled('drawLines', `Отрисовка линий, число соединений: ${connections.length}`);
-    // Очищаем предыдущие линии
     svg.innerHTML = '';
-
     const containerRect = svg.parentElement
       ? svg.parentElement.getBoundingClientRect()
       : { left: 0, top: 0 };
-
-    // Определяем цвет линий по родительскому контейнеру:
-    // если контейнер (или его родитель) имеет [dot-lines], то используем его, иначе дефолтный цвет.
     const lineColor = getLineColor(svg.parentElement);
-
     connections.forEach(({ from, to }) => {
       const fromRect = from.getBoundingClientRect();
       const toRect = to.getBoundingClientRect();
-
-      // Вычисляем координаты относительно родительского контейнера
       const x1 = fromRect.left - containerRect.left + fromRect.width / 2;
       const y1 = fromRect.top - containerRect.top + fromRect.height / 2;
       const x2 = toRect.left - containerRect.left + toRect.width / 2;
       const y2 = toRect.top - containerRect.top + toRect.height / 2;
-      const d = `M ${x1} ${y1} L ${x2} ${y2}`;
+      let d: string;
+      if (Math.abs(x2 - x1) < 1) {
+        d = `M ${x1} ${y1} L ${x2} ${y2}`;
+      } else {
+        d = `M ${x1} ${y1} H ${x2} V ${y2}`;
+      }
       logThrottled('drawLine', 'Отрисовываем линию с координатами:', d);
-
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.classList.add('connection-line');
-      // Применяем цвет с !important через style.setProperty
       path.style.setProperty('stroke', lineColor, 'important');
       path.setAttribute('stroke-width', '1');
       path.setAttribute('fill', 'none');
