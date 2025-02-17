@@ -13,7 +13,7 @@ export const func_mindConnectionsLeader = () => {
         height: '100%',
         pointerEvents: 'none',
         overflow: 'visible',
-        zIndex: '1',
+        zIndex: '-1',
       });
       document.body.insertBefore(svg, document.body.firstChild);
     }
@@ -73,6 +73,9 @@ export const func_mindConnectionsLeader = () => {
       // Создаем path элемент
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.classList.add('connection-line');
+      path.setAttribute('stroke', '#666666');
+      path.setAttribute('stroke-width', '1');
+      path.setAttribute('fill', 'none');
 
       // Вычисляем координаты с учетом прокрутки
       const x1 = fromRect.left + fromRect.width / 2 + window.scrollX;
