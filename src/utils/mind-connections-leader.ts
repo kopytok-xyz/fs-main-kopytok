@@ -113,9 +113,9 @@ export const func_mindConnectionsLeader = () => {
   };
 
   // Глобальная переменная для текущего стиля горизонтальных линий (grid, fluid или straight)
-  let currentHorizontalLineStyle: 'grid' | 'fluid' | 'straight' = 'grid';
+  let currentHorizontalLineStyle: 'grid' | 'fluid' | 'straight' = 'fluid';
 
-  // Функция для вычисления L-образного пути с закругленным углом (стиль fluid)
+  // Функция для вычисления L-образного пути с закругленным углом (стиль fluid) с увеличенным скруглением
   const computeFluidHorizontalPath = (x1: number, y1: number, x2: number, y2: number): string => {
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -124,7 +124,7 @@ export const func_mindConnectionsLeader = () => {
     }
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
-    let r = 10;
+    let r = 20;
     r = Math.min(r, absDx / 2, absDy / 2);
     const signDx = dx >= 0 ? 1 : -1;
     const signDy = dy >= 0 ? 1 : -1;
