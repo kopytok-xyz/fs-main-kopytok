@@ -112,7 +112,30 @@ export const func_mindConnectionsLeader = () => {
     return connections;
   };
 
-  // Функция отрисовки линий с использованием нового getLineColor
+  // Глобальная переменная для текущего стиля горизонтальных линий (grid, fluid или straight)
+  let currentHorizontalLineStyle: 'grid' | 'fluid' | 'straight' = 'grid';
+
+  // Функция для вычисления L-образного пути с закругленным углом (стиль fluid)
+  const computeFluidHorizontalPath = (x1: number, y1: number, x2: number, y2: number): string => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    if (dy === 0) {
+      return `M ${x1} ${y1} L ${x2} ${y2}`;
+    }
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    let r = 10;
+    r = Math.min(r, absDx / 2, absDy / 2);
+    const signDx = dx >= 0 ? 1 : -1;
+    const signDy = dy >= 0 ? 1 : -1;
+    const horizontalEndX = x2 - signDx * r;
+    const verticalStartY = y1 + signDy * r;
+    const sweepFlag = signDx === signDy ? 1 : 0;
+    return `M ${x1} ${y1} H ${horizontalEndX} A ${r} ${r} 0 0 ${sweepFlag} ${x2} ${verticalStartY} V ${y2}`;
+  };
+
+  // Отрисовка линий. Для горизонтальных линий (если разница по X значимая)
+  // применяется стиль, выбранный через hover, либо стандартный grid для устройств с шириной менее 992.
   const drawLines = (svg: SVGElement, connections: Array<{ from: Element; to: Element }>) => {
     logThrottled('drawLines', `Отрисовка линий, число соединений: ${connections.length}`);
     svg.innerHTML = '';
@@ -131,7 +154,19 @@ export const func_mindConnectionsLeader = () => {
       if (Math.abs(x2 - x1) < 1) {
         d = `M ${x1} ${y1} L ${x2} ${y2}`;
       } else {
-        d = `M ${x1} ${y1} H ${x2} V ${y2}`;
+        let style = currentHorizontalLineStyle;
+        if (window.innerWidth < 992) {
+          style = 'grid';
+        }
+        if (style === 'grid') {
+          d = `M ${x1} ${y1} H ${x2} V ${y2}`;
+        } else if (style === 'straight') {
+          d = `M ${x1} ${y1} L ${x2} ${y2}`;
+        } else if (style === 'fluid') {
+          d = computeFluidHorizontalPath(x1, y1, x2, y2);
+        } else {
+          d = `M ${x1} ${y1} H ${x2} V ${y2}`;
+        }
       }
       logThrottled('drawLine', 'Отрисовываем линию с координатами:', d);
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -153,7 +188,7 @@ export const func_mindConnectionsLeader = () => {
       if (!groups.has(connection.container)) {
         groups.set(connection.container, []);
       }
-      groups.get(connection.container).push({ from: connection.from, to: connection.to });
+      groups.get(connection.container)!.push({ from: connection.from, to: connection.to });
     });
 
     groups.forEach((connections, container) => {
@@ -168,6 +203,26 @@ export const func_mindConnectionsLeader = () => {
     requestAnimationFrame(updateAllLines);
   };
 
+  // При наведении на элемент с [hover-lines-changer] устанавливаем новый стиль горизонтальных линий.
+  const addHoverListeners = () => {
+    const hoverElements = document.querySelectorAll('[hover-lines-changer]');
+    hoverElements.forEach((element) => {
+      element.addEventListener('mouseenter', onHover);
+    });
+  };
+
+  const onHover = (event: Event) => {
+    if (window.innerWidth < 992) return;
+    const target = event.currentTarget as HTMLElement;
+    let newStyle = target.getAttribute('hover-lines-changer');
+    if (newStyle) {
+      newStyle = newStyle.trim().toLowerCase();
+      if (['fluid', 'straight', 'grid'].includes(newStyle)) {
+        currentHorizontalLineStyle = newStyle as 'fluid' | 'straight' | 'grid';
+      }
+    }
+  };
+
   const init = () => {
     logThrottled('init', 'Инициализация соединений');
     const initialConnections = getConnections();
@@ -175,6 +230,7 @@ export const func_mindConnectionsLeader = () => {
     if (initialConnections.length > 0) {
       logThrottled('init', 'Запуск обновления линий');
       requestAnimationFrame(updateAllLines);
+      addHoverListeners();
 
       const observer = new MutationObserver(() => {
         logThrottled('observer', 'Обнаружены изменения в DOM, обновляем линии');
