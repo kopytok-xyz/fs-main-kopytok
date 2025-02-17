@@ -11,7 +11,6 @@ export const func_mindConnectionsLeader = () => {
     const now = Date.now();
     if (!lastLogTimes[key] || now - lastLogTimes[key] >= MIN_LOG_INTERVAL) {
       lastLogTimes[key] = now;
-      console.log(...args);
     }
   };
 
