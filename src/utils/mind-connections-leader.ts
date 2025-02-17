@@ -124,7 +124,7 @@ export const func_mindConnectionsLeader = () => {
     }
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
-    let r = 20;
+    let r = 40;
     r = Math.min(r, absDx / 2, absDy / 2);
     const signDx = dx >= 0 ? 1 : -1;
     const signDy = dy >= 0 ? 1 : -1;
