@@ -1,7 +1,6 @@
 export const func_mindConnectionsLeader = () => {
-  // Создаем SVG контейнер
-  const createSvgContainer = () => {
-    let svg = document.getElementById('connection-svg');
+  const createSvgContainerIn = (parent: Element) => {
+    let svg = parent.querySelector('#connection-svg') as SVGElement;
     if (!svg) {
       svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('id', 'connection-svg');
@@ -13,17 +12,15 @@ export const func_mindConnectionsLeader = () => {
         height: '100%',
         pointerEvents: 'none',
         overflow: 'visible',
-        zIndex: '-1',
+        zIndex: '9999',
       });
-      document.body.insertBefore(svg, document.body.firstChild);
+      parent.insertBefore(svg, parent.firstChild);
     }
     return svg;
   };
 
-  // Функция для проверки видимости элемента
   const isElementVisible = (element: Element): boolean => {
-    const style = window.getComputedStyle(element);
-    return style.display !== 'none';
+    return window.getComputedStyle(element).display !== 'none';
   };
 
   const getDeviceType = () => {
@@ -33,9 +30,11 @@ export const func_mindConnectionsLeader = () => {
     return 'pc';
   };
 
-  // Функция для получения всех соединений
-  const getConnections = () => {
-    const connections: Array<{ from: Element; to: Element }> = [];
+  // Тип для хранения информации о соединении вместе с контейнером для отрисовки
+  type Connection = { from: Element; to: Element; container: Element };
+
+  const getConnections = (): Connection[] => {
+    const connections: Connection[] = [];
     const deviceType = getDeviceType();
     const dots = document.querySelectorAll(`[dot-${deviceType}]`);
 
@@ -46,14 +45,22 @@ export const func_mindConnectionsLeader = () => {
       if (!dotValue) return;
 
       const targetNames = dotValue.split(',').map((name) => name.trim());
-
       targetNames.forEach((targetName) => {
         const targets = document.querySelectorAll(`[dot-${deviceType}="${targetName}"]`);
-
         targets.forEach((target) => {
-          if (target !== dot && isElementVisible(target)) {
-            connections.push({ from: dot, to: target });
+          if (dot === target || !isElementVisible(target)) return;
+
+          // Определяем, находится ли обе точки в одном табе
+          const containerDot = dot.closest('.w-tab-pane');
+          const containerTarget = target.closest('.w-tab-pane');
+
+          let container: Element;
+          if (containerDot && containerTarget && containerDot === containerTarget) {
+            container = containerDot;
+          } else {
+            container = document.body;
           }
+          connections.push({ from: dot, to: target, container });
         });
       });
     });
@@ -61,61 +68,69 @@ export const func_mindConnectionsLeader = () => {
     return connections;
   };
 
-  // Функция для отрисовки линий
+  // Отрисовка линий для заданного svg-контейнера с учетом его привязки
   const drawLines = (svg: SVGElement, connections: Array<{ from: Element; to: Element }>) => {
     // Очищаем предыдущие линии
     svg.innerHTML = '';
+
+    const containerRect = svg.parentElement
+      ? svg.parentElement.getBoundingClientRect()
+      : { left: 0, top: 0 };
 
     connections.forEach(({ from, to }) => {
       const fromRect = from.getBoundingClientRect();
       const toRect = to.getBoundingClientRect();
 
-      // Создаем path элемент
+      // Вычисляем координаты относительно родительского контейнера
+      const x1 = fromRect.left - containerRect.left + fromRect.width / 2;
+      const y1 = fromRect.top - containerRect.top + fromRect.height / 2;
+      const x2 = toRect.left - containerRect.left + toRect.width / 2;
+      const y2 = toRect.top - containerRect.top + toRect.height / 2;
+
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.classList.add('connection-line');
       path.setAttribute('stroke', '#666666');
       path.setAttribute('stroke-width', '1');
       path.setAttribute('fill', 'none');
 
-      // Вычисляем координаты с учетом прокрутки
-      const x1 = fromRect.left + fromRect.width / 2 + window.scrollX;
-      const y1 = fromRect.top + fromRect.height / 2 + window.scrollY;
-      const x2 = toRect.left + toRect.width / 2 + window.scrollX;
-      const y2 = toRect.top + toRect.height / 2 + window.scrollY;
-
-      // Создаем путь для линии
       const d = `M ${x1} ${y1} L ${x2} ${y2}`;
       path.setAttribute('d', d);
-
-      // Добавляем линию в SVG
       svg.appendChild(path);
     });
   };
 
-  // Инициализация
+  // Группируем соединения по их контейнеру и отрисовываем линии для каждой группы
+  const updateAllLines = () => {
+    const allConnections = getConnections();
+    const groups = new Map<Element, Array<{ from: Element; to: Element }>>();
+
+    allConnections.forEach((connection) => {
+      if (!groups.has(connection.container)) {
+        groups.set(connection.container, []);
+      }
+      groups.get(connection.container).push({ from: connection.from, to: connection.to });
+    });
+
+    groups.forEach((connections, container) => {
+      const svg = createSvgContainerIn(container);
+      drawLines(svg, connections);
+    });
+
+    requestAnimationFrame(updateAllLines);
+  };
+
   const init = () => {
-    const svg = createSvgContainer();
-    let connections = getConnections();
+    const initialConnections = getConnections();
+    if (initialConnections.length > 0) {
+      console.log('Найдены соединения:', initialConnections.length);
 
-    if (connections.length > 0) {
-      console.log('Найдены соединения:', connections.length);
-
-      // Функция обновления линий
-      const updateAllLines = () => {
-        connections = getConnections(); // Обновляем список соединений
-        drawLines(svg, connections);
-        requestAnimationFrame(updateAllLines);
-      };
-
-      // Запускаем постоянное обновление
+      // Запускаем обновление линий
       requestAnimationFrame(updateAllLines);
 
-      // Наблюдатель за изменениями в DOM
+      // Наблюдатель за изменениями в DOM (при необходимости можно добавить вызов updateAllLines)
       const observer = new MutationObserver(() => {
-        connections = getConnections();
+        // При изменениях в DOM линии будут обновляться в следующем кадре
       });
-
-      // Настройки наблюдателя
       observer.observe(document.body, {
         attributes: true,
         childList: true,
@@ -123,7 +138,6 @@ export const func_mindConnectionsLeader = () => {
         characterData: true,
       });
 
-      // Очистка при уничтожении
       return () => {
         observer.disconnect();
       };
