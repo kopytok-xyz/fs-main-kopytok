@@ -116,22 +116,32 @@ export const func_mindConnectionsLeader = () => {
   let currentHorizontalLineStyle: 'grid' | 'fluid' | 'straight' = 'fluid';
 
   // Функция для вычисления L-образного пути с закругленным углом (стиль fluid) с увеличенным скруглением
-  const computeFluidHorizontalPath = (x1: number, y1: number, x2: number, y2: number): string => {
+  const computeFluidPath = (x1: number, y1: number, x2: number, y2: number): string => {
     const dx = x2 - x1;
     const dy = y2 - y1;
-    if (dy === 0) {
-      return `M ${x1} ${y1} L ${x2} ${y2}`;
-    }
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
-    let r = 40;
-    r = Math.min(r, absDx / 2, absDy / 2);
-    const signDx = dx >= 0 ? 1 : -1;
-    const signDy = dy >= 0 ? 1 : -1;
-    const horizontalEndX = x2 - signDx * r;
-    const verticalStartY = y1 + signDy * r;
-    const sweepFlag = signDx === signDy ? 1 : 0;
-    return `M ${x1} ${y1} H ${horizontalEndX} A ${r} ${r} 0 0 ${sweepFlag} ${x2} ${verticalStartY} V ${y2}`;
+
+    // Устанавливаем базовый радиус равный 20, но не больше, чем половина расстояния по соответствующей оси
+    const r = Math.min(20, absDx / 2, absDy / 2);
+    if (r <= 0) {
+      return `M ${x1} ${y1} L ${x2} ${y2}`;
+    }
+
+    // Определяем конечную точку горизонтального сегмента:
+    // Если движение вправо, то доходим до x2 - r, если влево — до x2 + r
+    const horizontalEndX = dx >= 0 ? x2 - r : x2 + r;
+
+    // Определяем точку окончания дуги по вертикали:
+    // Мы начинаем дугу от y1 и двигаемся на r вниз или вверх в зависимости от направления
+    const signY = dy >= 0 ? 1 : -1;
+    const arcEndY = y1 + r * signY;
+
+    // Выбираем флаг sweep для дуги:
+    // Если dx и dy имеют одинаковый знак (то есть движение вправо-вниз или влево-вверх), тогда sweepFlag = 1, иначе 0.
+    const sweepFlag = (dx >= 0 && dy >= 0) || (dx < 0 && dy < 0) ? 1 : 0;
+
+    return `M ${x1} ${y1} L ${horizontalEndX} ${y1} A ${r} ${r} 0 0 ${sweepFlag} ${x2} ${arcEndY} L ${x2} ${y2}`;
   };
 
   // Отрисовка линий. Для горизонтальных линий (если разница по X значимая)
@@ -163,7 +173,7 @@ export const func_mindConnectionsLeader = () => {
         } else if (style === 'straight') {
           d = `M ${x1} ${y1} L ${x2} ${y2}`;
         } else if (style === 'fluid') {
-          d = computeFluidHorizontalPath(x1, y1, x2, y2);
+          d = computeFluidPath(x1, y1, x2, y2);
         } else {
           d = `M ${x1} ${y1} H ${x2} V ${y2}`;
         }
