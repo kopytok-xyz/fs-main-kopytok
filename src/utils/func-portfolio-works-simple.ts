@@ -12,6 +12,9 @@ export const func_portfolioWorksSimple = () => {
   const animations = new Map();
 
   const initLottieAnimation = async (container) => {
+    // Проверяем видимость элемента перед загрузкой
+    if (!isElementVisible(container)) return null;
+
     const lottieUrl =
       container.getAttribute('face-work-lottie-portfolio-pc') ||
       container.getAttribute('face-work-lottie-portfolio-mobile');
