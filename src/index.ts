@@ -1,8 +1,8 @@
 import { func_buttonTextToggl } from '$utils/button-text-toggl';
 import { func_collapseButtons } from '$utils/collapse-buttons';
-import { func_faceWorks } from '$utils/face-works';
+import { func_faceWorksSimple } from '$utils/face-works-simple';
 import { func_fav } from '$utils/fav';
-import { func_portfolioWorks } from '$utils/func-portfolio-works';
+// import { func_portfolioWorks } from '$utils/func-portfolio-works';
 import { func_global } from '$utils/global';
 import { func_heightTransition } from '$utils/height-transition';
 import { func_heroForm } from '$utils/hero-form';
@@ -16,8 +16,8 @@ import { func_yearCounter } from '$utils/year-counter';
 window.Webflow ||= [];
 window.Webflow.push(() => {
   func_global();
-  func_faceWorks();
-  func_portfolioWorks();
+  func_faceWorksSimple();
+  // func_portfolioWorks();
   func_heroForm();
   func_collapseButtons();
   func_heightTransition();
