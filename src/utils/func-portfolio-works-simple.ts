@@ -1,4 +1,4 @@
-export const func_portfolioWorks = () => {
+export const func_portfolioWorksSimple = () => {
   const canvases = document.querySelectorAll('[face-work-canvas-portfolio]');
 
   if (!canvases.length) return;
