@@ -135,8 +135,8 @@ export const func_portfolioWorksSimple = () => {
 
       if (index === 0) {
         item.setAttribute('portfolio-item', 'visible');
-        contentElement.style.height = `${contentElement.scrollHeight}px`;
         contentElement.style.transition = 'height 0.3s ease';
+        updateContentHeight(contentElement);
         if (toggleIcon) {
           toggleIcon.style.transform = 'rotate(180deg)';
         }
@@ -158,7 +158,7 @@ export const func_portfolioWorksSimple = () => {
 
             if (contentElement) {
               if (isVisible) {
-                contentElement.style.height = `${contentElement.scrollHeight}px`;
+                updateContentHeight(contentElement);
                 if (toggleIcon) {
                   toggleIcon.style.transform = 'rotate(180deg)';
                 }
@@ -253,4 +253,15 @@ export const func_portfolioWorksSimple = () => {
 
   // Вызываем функцию настройки тогглов после инициализации канвасов
   setupPortfolioToggles();
+};
+
+const updateContentHeight = async (contentElement) => {
+  // Ждем следующего кадра для правильного расчета высоты
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  // Ждем еще немного для загрузки контента
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  if (contentElement) {
+    contentElement.style.height = `${contentElement.scrollHeight}px`;
+  }
 };
