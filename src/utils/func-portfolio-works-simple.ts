@@ -1,3 +1,8 @@
+const isElementVisible = (element) => {
+  const style = window.getComputedStyle(element);
+  return style.display !== 'none' && style.visibility !== 'hidden';
+};
+
 export const func_portfolioWorksSimple = () => {
   const pcLottieElements = document.querySelectorAll('[face-work-lottie-portfolio-pc]');
   const mobileLottieElements = document.querySelectorAll('[face-work-lottie-portfolio-mobile]');
@@ -256,12 +261,43 @@ export const func_portfolioWorksSimple = () => {
 };
 
 const updateContentHeight = async (contentElement) => {
-  // Ждем следующего кадра для правильного расчета высоты
+  // Ждем следующего кадра
   await new Promise((resolve) => requestAnimationFrame(resolve));
-  // Ждем еще немного для загрузки контента
+
+  // Находим все Lottie контейнеры внутри контента
+  const lottieContainers = contentElement.querySelectorAll(
+    '[face-work-lottie-portfolio-pc], [face-work-lottie-portfolio-mobile]'
+  );
+
+  // Ждем загрузки всех видимых Lottie анимаций
+  const visibleLottiePromises = Array.from(lottieContainers)
+    .filter((container) => isElementVisible(container))
+    .map((container) => {
+      return new Promise((resolve) => {
+        const checkLottie = () => {
+          const svg = container.querySelector('svg');
+          if (svg && svg.getBoundingClientRect().height > 0) {
+            resolve();
+          } else {
+            setTimeout(checkLottie, 50);
+          }
+        };
+        checkLottie();
+      });
+    });
+
+  await Promise.all(visibleLottiePromises);
+
+  // Добавляем небольшую задержку для надежности
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   if (contentElement) {
-    contentElement.style.height = `${contentElement.scrollHeight}px`;
+    // Конвертируем пиксели в rem
+    const pixelsToRem = (pixels) => {
+      const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      return `${pixels / rootFontSize}rem`;
+    };
+
+    contentElement.style.height = pixelsToRem(contentElement.scrollHeight);
   }
 };
