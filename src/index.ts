@@ -1,5 +1,6 @@
 import { func_buttonTextToggl } from '$utils/button-text-toggl';
 import { func_collapseButtons } from '$utils/collapse-buttons';
+import { func_collapsedClassHeightTransition } from '$utils/collapsed-class-height-transition';
 import { func_faceWorksSimple } from '$utils/face-works-simple';
 import { func_fav } from '$utils/fav';
 import { func_portfolioWorksSimple } from '$utils/func-portfolio-works-simple';
@@ -31,4 +32,5 @@ window.Webflow.push(() => {
   // func_testimonialsGrid();
   func_fav();
   func_syncClickSection();
+  // func_collapsedClassHeightTransition();
 });
