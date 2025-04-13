@@ -18,8 +18,8 @@ import { func_yearCounter } from '$utils/year-counter';
 window.Webflow ||= [];
 window.Webflow.push(() => {
   func_global();
-  // func_faceWorksSimple();
-  // func_portfolioWorksSimple();
+  func_faceWorksSimple();
+  func_portfolioWorksSimple();
   func_heroForm();
   // func_collapseButtons();
   // func_heightTransition();
@@ -29,7 +29,7 @@ window.Webflow.push(() => {
   func_yearCounter();
   // func_togglClassTriggerTarget();
   func_mindConnectionsLeader();
-  // func_testimonialsGrid();
+  func_testimonialsGrid();
   func_fav();
   func_syncClickSection();
   // func_collapsedClassHeightTransition();
