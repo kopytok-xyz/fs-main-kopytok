@@ -11,7 +11,7 @@ export const func_mindConnectionsLeader = () => {
     const now = Date.now();
     if (!lastLogTimes[key] || now - lastLogTimes[key] >= MIN_LOG_INTERVAL) {
       lastLogTimes[key] = now;
-      // Здесь были бы логи: console.log(`[${key}]`, ...args);
+      // Логи отключены для предотвращения захламления консоли
     }
   };
 
@@ -56,44 +56,6 @@ export const func_mindConnectionsLeader = () => {
     return containerPane || document.body;
   };
 
-  // Функция для отслеживания родительских элементов точек с атрибутом dot-beh="fixed-on-scroll"
-  const logFixedOnScrollParents = () => {
-    const fixedElements = document.querySelectorAll(
-      '[dot-beh="fixed-on-scroll"][dot-pc], [dot-beh="fixed-on-scroll"][dot-mobile], [dot-beh="fixed-on-scroll"][dot-tablet]'
-    );
-
-    if (fixedElements.length > 0) {
-      console.log(
-        '%c Элементы с атрибутом dot-beh="fixed-on-scroll":',
-        'background: #ff6b6b; color: white; padding: 3px;'
-      );
-
-      fixedElements.forEach((element) => {
-        // Ищем специальный контейнер с атрибутом svg-container="true"
-        const svgContainer = element.closest('[svg-container="true"]');
-
-        // Находим стандартный контейнер
-        const standardContainer = element.closest('.w-tab-pane') || document.body;
-
-        console.log({
-          'Элемент с dot-beh="fixed-on-scroll"': element,
-          'Найден контейнер с svg-container="true"': svgContainer ? 'Да' : 'Нет',
-          'Будет использован контейнер': svgContainer || standardContainer,
-        });
-      });
-    }
-
-    // Проверим наличие атрибута svg-container="true" на странице
-    const svgContainers = document.querySelectorAll('[svg-container="true"]');
-    if (svgContainers.length > 0) {
-      console.log(
-        '%c Найдены элементы с атрибутом svg-container="true":',
-        'background: #5cb85c; color: white; padding: 3px;',
-        svgContainers
-      );
-    }
-  };
-
   const isElementVisible = (element: Element): boolean => {
     const visible = window.getComputedStyle(element).display !== 'none';
     logThrottled('isVisible', `Элемент ${element.tagName} виден:`, visible);
@@ -135,18 +97,6 @@ export const func_mindConnectionsLeader = () => {
     const deviceType = getDeviceType();
     logThrottled('getConnections', `Определенный тип устройства: ${deviceType}`);
     const dots = document.querySelectorAll(`[dot-${deviceType}]`);
-
-    // Выведем в консоль точки с атрибутом dot-beh="fixed-on-scroll"
-    const fixedDots = Array.from(dots).filter(
-      (dot) => dot.getAttribute('dot-beh') === 'fixed-on-scroll'
-    );
-    if (fixedDots.length > 0) {
-      console.log(
-        '%c Точки с атрибутом dot-beh="fixed-on-scroll":',
-        'background: #4d96ff; color: white; padding: 3px;',
-        fixedDots
-      );
-    }
 
     dots.forEach((dot) => {
       if (!isElementVisible(dot)) return;
@@ -193,7 +143,6 @@ export const func_mindConnectionsLeader = () => {
       });
     });
 
-    logThrottled('getConnections', `Найдено соединений: ${connections.length}`);
     return connections;
   };
 
@@ -326,9 +275,6 @@ export const func_mindConnectionsLeader = () => {
       logThrottled('init', 'Запуск обновления линий');
       requestAnimationFrame(updateAllLines);
       addHoverListeners();
-
-      // Вызываем функцию для логирования родительских элементов точек с fixed-on-scroll
-      logFixedOnScrollParents();
 
       const observer = new MutationObserver(() => {
         logThrottled('observer', 'Обнаружены изменения в DOM, обновляем линии');
