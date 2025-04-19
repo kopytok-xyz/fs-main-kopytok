@@ -238,23 +238,6 @@ export const func_portfolioWorksSimple = () => {
             })
           );
         }
-
-        // Закрываем все остальные открытые элементы
-        portfolioItems.forEach((otherItem) => {
-          if (otherItem !== item && otherItem.getAttribute('portfolio-item') === 'visible') {
-            otherItem.setAttribute('portfolio-item', 'hidden');
-            const otherTrigger = otherItem.querySelector('[work-toggl-trigger]');
-            if (otherTrigger) {
-              otherTrigger.dispatchEvent(
-                new MouseEvent('click', {
-                  view: window,
-                  bubbles: true,
-                  cancelable: true,
-                })
-              );
-            }
-          }
-        });
       });
     });
   };
