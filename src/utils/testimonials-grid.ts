@@ -30,16 +30,38 @@ export const func_testimonialsGrid = () => {
     targetWaiter.appendChild(card);
   });
 
-  const toggleEl = document.querySelector('[section-toggle="testimonials"]');
-  if (toggleEl) {
-    toggleEl.addEventListener('click', () => {
-      waiterElements.forEach((waiter) => {
-        waiter.classList.toggle('is-active');
-      });
-      const mainGrid = document.querySelector('.testimonials-grid.is-main');
-      if (mainGrid) {
-        mainGrid.classList.toggle('is-active');
+  // Функция для переключения видимости отзывов
+  const toggleTestimonials = () => {
+    waiterElements.forEach((waiter) => {
+      waiter.classList.toggle('is-active');
+    });
+    const mainGrid = document.querySelector('.testimonials-grid.is-main');
+    if (mainGrid) {
+      mainGrid.classList.toggle('is-active');
+    }
+
+    // Управление видимостью триггеров открытия
+    const openTriggers = document.querySelectorAll('.testimonial-open-trigger');
+    openTriggers.forEach((trigger) => {
+      // Если отзывы показываются (mainGrid имеет класс is-active),
+      // добавляем класс hide к триггеру, иначе убираем
+      if (mainGrid && mainGrid.classList.contains('is-active')) {
+        trigger.classList.add('hide');
+      } else {
+        trigger.classList.remove('hide');
       }
     });
+  };
+
+  // Обработчик клика на кнопку переключения
+  const toggleEl = document.querySelector('[section-toggle="testimonials"]');
+  if (toggleEl) {
+    toggleEl.addEventListener('click', toggleTestimonials);
   }
+
+  // Обработчик клика на триггеры открытия
+  const openTriggers = document.querySelectorAll('.testimonial-open-trigger');
+  openTriggers.forEach((trigger) => {
+    trigger.addEventListener('click', toggleTestimonials);
+  });
 };
