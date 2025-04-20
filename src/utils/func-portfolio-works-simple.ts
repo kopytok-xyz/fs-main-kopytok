@@ -473,10 +473,23 @@ const updateContentHeight = async (contentElement) => {
   // Ждем следующего кадра
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
+  // Очищаем все предыдущие стили высоты, чтобы сбросить возможные накопленные значения
+  contentElement.style.height = 'auto';
+
   // Находим все Lottie контейнеры внутри контента
   const lottieContainers = contentElement.querySelectorAll(
     '[face-work-lottie-portfolio-pc], [face-work-lottie-portfolio-mobile]'
   );
+
+  // Проверяем, есть ли уже загруженные SVG и сбрасываем их стили
+  lottieContainers.forEach((container) => {
+    const svg = container.querySelector('svg');
+    if (svg) {
+      // Сбрасываем возможные накопленные трансформации
+      svg.style.transform = 'none';
+      svg.style.height = 'auto';
+    }
+  });
 
   // Ждем загрузки всех видимых Lottie анимаций
   const visibleLottiePromises = Array.from(lottieContainers)
@@ -501,12 +514,22 @@ const updateContentHeight = async (contentElement) => {
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   if (contentElement) {
+    // Временно устанавливаем auto, чтобы правильно вычислить scrollHeight
+    contentElement.style.height = 'auto';
+
+    // Запоминаем текущую высоту (после того как все дочерние элементы загрузились)
+    const calculatedHeight = contentElement.scrollHeight;
+
+    // Сохраняем высоту как атрибут, чтобы знать оригинальную высоту
+    contentElement.setAttribute('data-original-height', calculatedHeight.toString());
+
     // Конвертируем пиксели в rem
     const pixelsToRem = (pixels) => {
       const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
       return `${pixels / rootFontSize}rem`;
     };
 
-    contentElement.style.height = pixelsToRem(contentElement.scrollHeight);
+    // Устанавливаем окончательную высоту
+    contentElement.style.height = pixelsToRem(calculatedHeight);
   }
 };
