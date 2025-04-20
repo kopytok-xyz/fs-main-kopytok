@@ -26,6 +26,14 @@ export const func_portfolioWorksSimple = () => {
     if (!portfolioItem) return null;
 
     const progressBar = portfolioItem.querySelector('.portfolio-progress-bar');
+    const toggleIcon = portfolioItem.querySelector('[project-item-toggle]');
+
+    // Блокируем переключатель на время загрузки
+    if (toggleIcon) {
+      toggleIcon.setAttribute('data-loading', 'true');
+      toggleIcon.style.pointerEvents = 'none';
+      toggleIcon.style.opacity = '0.5';
+    }
 
     // Устанавливаем начальное состояние прогресс-бара
     if (progressBar) {
@@ -79,6 +87,13 @@ export const func_portfolioWorksSimple = () => {
 
       // Удаляем тултип
       portfolioItem.removeAttribute('title');
+
+      // Разблокируем переключатель
+      if (toggleIcon) {
+        toggleIcon.removeAttribute('data-loading');
+        toggleIcon.style.pointerEvents = 'auto';
+        toggleIcon.style.opacity = '1';
+      }
     };
 
     // Функция обновления прогресс-бара
