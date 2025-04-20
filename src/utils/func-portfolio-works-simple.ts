@@ -17,6 +17,10 @@ export const func_portfolioWorksSimple = () => {
     // Проверяем видимость элемента перед загрузкой
     if (!isElementVisible(container)) return null;
 
+    // Изначально скрываем контейнер
+    container.style.opacity = '0';
+    container.style.transition = 'opacity 0.5s ease-out';
+
     const lottieUrl =
       container.getAttribute('face-work-lottie-portfolio-pc') ||
       container.getAttribute('face-work-lottie-portfolio-mobile');
@@ -24,6 +28,13 @@ export const func_portfolioWorksSimple = () => {
     // Находим прогресс-бар для этого контейнера
     const portfolioItem = container.closest('[portfolio-item]');
     if (!portfolioItem) return null;
+
+    // Скрываем слайдер
+    const sliderForm = portfolioItem.querySelector('.fs-rangeslider_form');
+    if (sliderForm) {
+      sliderForm.style.opacity = '0';
+      sliderForm.style.transition = 'opacity 0.5s ease-out';
+    }
 
     const progressBar = portfolioItem.querySelector('.portfolio-progress-bar');
     const toggleIcon = portfolioItem.querySelector('[project-item-toggle]');
@@ -95,7 +106,16 @@ export const func_portfolioWorksSimple = () => {
       // Удаляем тултип
       portfolioItem.removeAttribute('title');
 
-      // Разблокируем переключатель, но с задержкой в 3 секунды
+      // Плавно показываем Lottie-контейнер
+      container.style.opacity = '1';
+
+      // Плавно показываем слайдер
+      const sliderForm = portfolioItem.querySelector('.fs-rangeslider_form');
+      if (sliderForm) {
+        sliderForm.style.opacity = '1';
+      }
+
+      // Разблокируем переключатель, но с задержкой в 1 секунду
       setTimeout(() => {
         if (toggleIcon) {
           toggleIcon.removeAttribute('data-loading');
@@ -104,7 +124,7 @@ export const func_portfolioWorksSimple = () => {
         }
         // Снимаем флаг блокировки интерактивности
         portfolioItem.removeAttribute('data-interaction-locked');
-      }, 3000); // 3 секунды таймаут
+      }, 1000); // 1 секунда таймаут
     };
 
     // Функция обновления прогресс-бара
@@ -513,13 +533,29 @@ const updateContentHeight = async (contentElement) => {
   // Очищаем все предыдущие стили высоты, чтобы сбросить возможные накопленные значения
   contentElement.style.height = 'auto';
 
+  // Находим родительский элемент portfolio-item
+  const portfolioItem = contentElement.closest('[portfolio-item]');
+
   // Находим все Lottie контейнеры внутри контента
   const lottieContainers = contentElement.querySelectorAll(
     '[face-work-lottie-portfolio-pc], [face-work-lottie-portfolio-mobile]'
   );
 
+  // Скрываем слайдер
+  if (portfolioItem) {
+    const sliderForm = portfolioItem.querySelector('.fs-rangeslider_form');
+    if (sliderForm) {
+      sliderForm.style.opacity = '0';
+      sliderForm.style.transition = 'opacity 0.5s ease-out';
+    }
+  }
+
   // Проверяем, есть ли уже загруженные SVG и сбрасываем их стили
   lottieContainers.forEach((container) => {
+    // Убеждаемся, что все контейнеры скрыты до полной настройки высоты
+    container.style.opacity = '0';
+    container.style.transition = 'opacity 0.5s ease-out';
+
     const svg = container.querySelector('svg');
     if (svg) {
       // Сбрасываем возможные накопленные трансформации
@@ -568,5 +604,23 @@ const updateContentHeight = async (contentElement) => {
 
     // Устанавливаем окончательную высоту
     contentElement.style.height = pixelsToRem(calculatedHeight);
+
+    // Теперь плавно показываем все Lottie-контейнеры и слайдер с небольшой задержкой
+    setTimeout(() => {
+      // Показываем контейнеры Lottie
+      lottieContainers.forEach((container) => {
+        if (isElementVisible(container)) {
+          container.style.opacity = '1';
+        }
+      });
+
+      // Показываем слайдер
+      if (portfolioItem) {
+        const sliderForm = portfolioItem.querySelector('.fs-rangeslider_form');
+        if (sliderForm) {
+          sliderForm.style.opacity = '1';
+        }
+      }
+    }, 200); // Небольшая задержка для уверенности в правильном расчете высоты
   }
 };
