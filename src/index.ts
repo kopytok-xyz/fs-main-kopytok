@@ -8,6 +8,7 @@ import { func_global } from '$utils/global';
 import { func_heightTransition } from '$utils/height-transition';
 import { func_heroForm } from '$utils/hero-form';
 import { func_mindConnectionsLeader } from '$utils/mind-connections-leader';
+import { func_scrollMenuVisibility } from '$utils/scroll-menu-visibility';
 import { initSmoothScroll } from '$utils/smooth-scroll';
 import { func_statsHero } from '$utils/stats-hero';
 import { func_syncClick } from '$utils/sync-click';
@@ -34,6 +35,7 @@ window.Webflow.push(() => {
   func_fav();
   func_syncClickSection();
   // func_collapsedClassHeightTransition();
+  func_scrollMenuVisibility();
 
   // Инициализация плавного скролла
   //initSmoothScroll();
