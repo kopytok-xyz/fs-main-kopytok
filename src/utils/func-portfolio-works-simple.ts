@@ -35,6 +35,10 @@ export const func_portfolioWorksSimple = () => {
       toggleIcon.style.opacity = '0.5';
     }
 
+    // Очистка контейнера перед созданием новой анимации
+    // Это предотвратит дублирование элементов
+    container.innerHTML = '';
+
     // Устанавливаем начальное состояние прогресс-бара
     if (progressBar) {
       progressBar.style.width = '0%';
@@ -284,6 +288,16 @@ export const func_portfolioWorksSimple = () => {
           const isVisible = portfolioItem.getAttribute('portfolio-item') === 'visible';
 
           if (isVisible && !animations.has(container)) {
+            // Если у контейнера уже есть анимация, удаляем её перед созданием новой
+            const existingAnimation = animations.get(container);
+            if (existingAnimation) {
+              existingAnimation.destroy();
+              animations.delete(container);
+
+              // Очистка контейнера для предотвращения дублирования
+              container.innerHTML = '';
+            }
+
             initLottieAnimation(container).then((animation) => {
               if (animation) {
                 animations.set(container, animation);
@@ -292,9 +306,13 @@ export const func_portfolioWorksSimple = () => {
             });
           } else if (!isVisible && animations.has(container)) {
             const animation = animations.get(container);
-            // Не уничтожаем анимацию полностью, а просто удаляем её из активных
-            // animation.destroy(); - старый вариант
-            animation.stop(); // Просто останавливаем анимацию
+            // Полностью уничтожаем анимацию при закрытии, вместо простой остановки
+            if (animation) {
+              animation.destroy();
+
+              // Очищаем контейнер от возможных остатков
+              container.innerHTML = '';
+            }
             animations.delete(container);
           }
         }
