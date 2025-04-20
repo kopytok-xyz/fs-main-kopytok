@@ -362,21 +362,25 @@ export const func_portfolioWorksSimple = () => {
     portfolioItems.forEach((item, index) => {
       const contentElement = item.querySelector('[portfolio-item-toggle-content]');
       const toggleIcon = item.querySelector('[project-item-toggle]');
+      const toggleArrow = toggleIcon
+        ? toggleIcon.querySelector('[project-item-toggle-arrow]')
+        : null;
+
       if (!contentElement) return;
 
       if (index === 0) {
         item.setAttribute('portfolio-item', 'visible');
         contentElement.style.transition = 'height 0.3s ease';
         updateContentHeight(contentElement);
-        if (toggleIcon) {
-          toggleIcon.style.transform = 'rotate(180deg)';
+        if (toggleArrow) {
+          toggleArrow.style.transform = 'rotate(180deg)';
         }
       } else {
         item.setAttribute('portfolio-item', 'hidden');
         contentElement.style.height = '0px';
         contentElement.style.transition = 'height 0.3s ease';
-        if (toggleIcon) {
-          toggleIcon.style.transform = 'rotate(0deg)';
+        if (toggleArrow) {
+          toggleArrow.style.transform = 'rotate(0deg)';
         }
       }
 
@@ -386,17 +390,20 @@ export const func_portfolioWorksSimple = () => {
             const isVisible = item.getAttribute('portfolio-item') === 'visible';
             const contentElement = item.querySelector('[portfolio-item-toggle-content]');
             const toggleIcon = item.querySelector('[project-item-toggle]');
+            const toggleArrow = toggleIcon
+              ? toggleIcon.querySelector('[project-item-toggle-arrow]')
+              : null;
 
             if (contentElement) {
               if (isVisible) {
                 updateContentHeight(contentElement);
-                if (toggleIcon) {
-                  toggleIcon.style.transform = 'rotate(180deg)';
+                if (toggleArrow) {
+                  toggleArrow.style.transform = 'rotate(180deg)';
                 }
               } else {
                 contentElement.style.height = '0px';
-                if (toggleIcon) {
-                  toggleIcon.style.transform = 'rotate(0deg)';
+                if (toggleArrow) {
+                  toggleArrow.style.transform = 'rotate(0deg)';
                 }
               }
             }
