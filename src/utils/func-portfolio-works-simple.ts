@@ -35,6 +35,9 @@ export const func_portfolioWorksSimple = () => {
       toggleIcon.style.opacity = '0.5';
     }
 
+    // Устанавливаем флаг для предотвращения быстрого повторного клика
+    portfolioItem.setAttribute('data-interaction-locked', 'true');
+
     // Очистка контейнера перед созданием новой анимации
     // Это предотвратит дублирование элементов
     container.innerHTML = '';
@@ -92,12 +95,16 @@ export const func_portfolioWorksSimple = () => {
       // Удаляем тултип
       portfolioItem.removeAttribute('title');
 
-      // Разблокируем переключатель
-      if (toggleIcon) {
-        toggleIcon.removeAttribute('data-loading');
-        toggleIcon.style.pointerEvents = 'auto';
-        toggleIcon.style.opacity = '1';
-      }
+      // Разблокируем переключатель, но с задержкой в 3 секунды
+      setTimeout(() => {
+        if (toggleIcon) {
+          toggleIcon.removeAttribute('data-loading');
+          toggleIcon.style.pointerEvents = 'auto';
+          toggleIcon.style.opacity = '1';
+        }
+        // Снимаем флаг блокировки интерактивности
+        portfolioItem.removeAttribute('data-interaction-locked');
+      }, 3000); // 3 секунды таймаут
     };
 
     // Функция обновления прогресс-бара
@@ -445,6 +452,11 @@ export const func_portfolioWorksSimple = () => {
         // Проверяем, не является ли целевой элемент или его родители игнорируемыми
         let shouldIgnore = false;
         let target = e.target as HTMLElement;
+
+        // Проверяем, не заблокировано ли взаимодействие
+        if (item.hasAttribute('data-interaction-locked')) {
+          return; // Если заблокировано, игнорируем клик
+        }
 
         while (target && target !== item) {
           if (target.hasAttribute('portfolio-item-toggle-ignore')) {
