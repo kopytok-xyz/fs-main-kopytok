@@ -50,10 +50,15 @@ export const func_heroForm = () => {
       }
     }
 
-    function isValidFigmaLink(value) {
+    function isValidLink(value) {
       try {
         const url = new URL(value);
-        return url.hostname.toLowerCase().includes('figma.com');
+        const hostname = url.hostname.toLowerCase();
+        return (
+          hostname.includes('figma.com') ||
+          hostname.includes('drive.google.com') ||
+          hostname.includes('dropbox.com')
+        );
       } catch (_) {
         return false;
       }
@@ -66,13 +71,13 @@ export const func_heroForm = () => {
 
     function isValidInput(step, value) {
       if (step === 1) {
-        return value === '' || isValidFigmaLink(value);
+        return value === '' || isValidLink(value);
       }
       if (step === 2) {
         return validateEmail(value);
       }
       if (step === 3) {
-        return value.length >= 5;
+        return value.length >= 2;
       }
       return false;
     }
@@ -82,7 +87,7 @@ export const func_heroForm = () => {
       const isValid = isValidInput(step, value);
 
       if (step === 1) {
-        if (value !== '' && isValidFigmaLink(value)) {
+        if (value !== '' && isValidLink(value)) {
           filledSteps.add(step);
         }
       } else {
@@ -93,7 +98,7 @@ export const func_heroForm = () => {
 
       if (isValid) {
         if (step === 1) {
-          input.placeholder = 'link to figma project';
+          input.placeholder = 'link to figma, google drive or dropbox';
         }
         if (step === 2) {
           input.placeholder = 'email';
@@ -103,13 +108,13 @@ export const func_heroForm = () => {
         }
       } else {
         if (step === 1) {
-          input.placeholder = 'Please enter a valid Figma link';
+          input.placeholder = 'Please enter a valid Figma, Google Drive or Dropbox link';
         }
         if (step === 2) {
           input.placeholder = 'Please enter a valid email address';
         }
         if (step === 3) {
-          input.placeholder = 'Please enter at least 5 characters';
+          input.placeholder = 'Please enter at least 2 characters';
         }
         resetUIFromStep(step);
       }
