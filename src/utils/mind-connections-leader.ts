@@ -5,13 +5,18 @@ export const func_mindConnectionsLeader = () => {
   const MIN_LOG_INTERVAL = 2000;
   const lastLogTimes: { [key: string]: number } = {};
 
+  // Функция для проверки, находимся ли мы на главной странице
+  const isHomePage = (): boolean => {
+    return window.location.pathname === '/' || window.location.pathname === '/index.html';
+  };
+
   // Функция, которая выводит логи не чаще, чем раз в MIN_LOG_INTERVAL по каждому уникальному ключу.
   const logThrottled = (key: string, ...args: unknown[]) => {
     if (!DEBUG) return;
     const now = Date.now();
     if (!lastLogTimes[key] || now - lastLogTimes[key] >= MIN_LOG_INTERVAL) {
       lastLogTimes[key] = now;
-      // Логи отключены для предотвращения захламления консоли
+      console.log(`[MindConnections] ${key}:`, ...args);
     }
   };
 
@@ -269,28 +274,38 @@ export const func_mindConnectionsLeader = () => {
 
   const init = () => {
     logThrottled('init', 'Инициализация соединений');
-    const initialConnections = getConnections();
-    logThrottled('init', 'Начальное число соединений:', initialConnections.length);
-    if (initialConnections.length > 0) {
-      logThrottled('init', 'Запуск обновления линий');
-      requestAnimationFrame(updateAllLines);
-      addHoverListeners();
 
-      const observer = new MutationObserver(() => {
-        logThrottled('observer', 'Обнаружены изменения в DOM, обновляем линии');
-      });
-      observer.observe(document.body, {
-        attributes: true,
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
-
-      return () => {
-        observer.disconnect();
-      };
+    // Проверяем, находимся ли мы на главной странице
+    if (!isHomePage()) {
+      logThrottled('init', 'Не главная страница, соединения не инициализируются');
+      return;
     }
-    logThrottled('init', 'Соединения не найдены');
+
+    // Добавляем задержку в 2 секунды перед инициализацией
+    setTimeout(() => {
+      const initialConnections = getConnections();
+      logThrottled('init', 'Начальное число соединений:', initialConnections.length);
+      if (initialConnections.length > 0) {
+        logThrottled('init', 'Запуск обновления линий');
+        requestAnimationFrame(updateAllLines);
+        addHoverListeners();
+
+        const observer = new MutationObserver(() => {
+          logThrottled('observer', 'Обнаружены изменения в DOM, обновляем линии');
+        });
+        observer.observe(document.body, {
+          attributes: true,
+          childList: true,
+          subtree: true,
+          characterData: true,
+        });
+
+        return () => {
+          observer.disconnect();
+        };
+      }
+      logThrottled('init', 'Соединения не найдены');
+    }, 2100);
   };
 
   init();
